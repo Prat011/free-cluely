@@ -147,4 +147,29 @@ button, input, select, textarea, .interactive {
   max-height: 32px !important;
 }
 
+/* Custom scrollbar styling - light gray */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(156, 163, 175, 0.6); /* Light gray */
+  border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(156, 163, 175, 0.8); /* Slightly darker light gray on hover */
+}
+
+::-webkit-scrollbar-corner {
+  background: rgba(255, 255, 255, 0.1);
+}
+
 

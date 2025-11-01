@@ -1,6 +1,108 @@
 import React, { useState, useEffect, useRef } from "react"
 import { IoLogOutOutline } from "react-icons/io5"
 import { Dialog, DialogContent, DialogClose } from "../ui/dialog"
+import { Prism as SyntaxHighlighter } from "react-syntax-highlighter"
+import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism'
+
+// Function to format text with markdown support
+const formatText = (text: string) => {
+  const parts: (string | JSX.Element)[] = []
+  let lastIndex = 0
+
+  // Handle code blocks first (```code```)
+  const codeBlockRegex = /```(\w+)?\n?([\s\S]*?)```/g
+  let match
+  while ((match = codeBlockRegex.exec(text)) !== null) {
+    // Add text before the code block
+    if (match.index > lastIndex) {
+      parts.push(formatInlineMarkdown(text.slice(lastIndex, match.index)))
+    }
+
+    // Add the code block
+    const language = match[1] || 'text'
+    const code = match[2].trim()
+    parts.push(
+      <div key={`code-${match.index}`} className="my-2 rounded-md overflow-hidden">
+        <SyntaxHighlighter
+          language={language}
+          style={oneDark}
+          customStyle={{
+            margin: 0,
+            padding: '12px',
+            fontSize: '11px',
+            background: '#1e1e1e'
+          }}
+        >
+          {code}
+        </SyntaxHighlighter>
+      </div>
+    )
+
+    lastIndex = match.index + match[0].length
+  }
+
+  // Add remaining text
+  if (lastIndex < text.length) {
+    parts.push(formatInlineMarkdown(text.slice(lastIndex)))
+  }
+
+  return parts
+}
+
+// Function to format inline markdown (bold, italic, code, links)
+const formatInlineMarkdown = (text: string) => {
+  const parts: (string | JSX.Element)[] = []
+  let lastIndex = 0
+
+  // Handle inline code first
+  const inlineCodeRegex = /`([^`]+)`/g
+  let match
+  while ((match = inlineCodeRegex.exec(text)) !== null) {
+    // Add text before the code
+    if (match.index > lastIndex) {
+      parts.push(formatSimpleMarkdown(text.slice(lastIndex, match.index)))
+    }
+
+    // Add the inline code
+    parts.push(
+      <code key={`inline-${match.index}`} className="bg-gray-800 px-1 py-0.5 rounded text-xs font-mono">
+        {match[1]}
+      </code>
+    )
+
+    lastIndex = match.index + match[0].length
+  }
+
+  // Add remaining text
+  if (lastIndex < text.length) {
+    parts.push(formatSimpleMarkdown(text.slice(lastIndex)))
+  }
+
+  return parts.length > 0 ? <>{parts}</> : text
+}
+
+// Function to format simple markdown (bold, italic, links)
+const formatSimpleMarkdown = (text: string) => {
+  // Handle line breaks
+  const lines = text.split('\n')
+  const formattedLines: (string | JSX.Element)[] = []
+
+  lines.forEach((line, index) => {
+    // Handle bold (**text**)
+    line = line.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    // Handle italic (*text*)
+    line = line.replace(/\*(.*?)\*/g, '<em>$1</em>')
+    // Handle links [text](url)
+    line = line.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer" class="text-blue-400 underline hover:text-blue-300">$1</a>')
+
+    if (index > 0) {
+      formattedLines.push(<br key={`br-${index}`} />)
+    }
+    formattedLines.push(<span key={`line-${index}`} dangerouslySetInnerHTML={{ __html: line }} />)
+  })
+
+  return <>{formattedLines}</>
+}
 
 interface QueueCommandsProps {
   onTooltipVisibilityChange: (visible: boolean, height: number) => void
@@ -186,7 +288,7 @@ const QueueCommands: React.FC<QueueCommandsProps> = ({
                         <span>Toggle Window</span>
                         <div className="flex gap-1 flex-shrink-0">
                           <span className="bg-white/10 px-1.5 py-0.5 rounded text-[10px] leading-none">
-                            ⌘
+                            ctrl + 
                           </span>
                           <span className="bg-white/10 px-1.5 py-0.5 rounded text-[10px] leading-none">
                             B
@@ -203,7 +305,7 @@ const QueueCommands: React.FC<QueueCommandsProps> = ({
                         <span>Take Screenshot</span>
                         <div className="flex gap-1 flex-shrink-0">
                           <span className="bg-white/10 px-1.5 py-0.5 rounded text-[10px] leading-none">
-                            ⌘
+                            ctrl +
                           </span>
                           <span className="bg-white/10 px-1.5 py-0.5 rounded text-[10px] leading-none">
                             H
@@ -222,7 +324,7 @@ const QueueCommands: React.FC<QueueCommandsProps> = ({
                         <span>Solve Problem</span>
                         <div className="flex gap-1 flex-shrink-0">
                           <span className="bg-white/10 px-1.5 py-0.5 rounded text-[10px] leading-none">
-                            ⌘
+                            ctrl +
                           </span>
                           <span className="bg-white/10 px-1.5 py-0.5 rounded text-[10px] leading-none">
                             ↵
@@ -254,8 +356,19 @@ const QueueCommands: React.FC<QueueCommandsProps> = ({
       </div>
       {/* Audio Result Display */}
       {audioResult && (
-        <div className="mt-2 p-2 bg-white/10 rounded text-white text-xs max-w-md">
-          <span className="font-semibold">Audio Result:</span> {audioResult}
+        <div className="mt-2 p-2 bg-white/10 rounded text-white text-xs max-w-md relative">
+          <button
+            onClick={() => setAudioResult(null)}
+            className="absolute top-1 right-1 w-4 h-4 flex items-center justify-center text-white/60 hover:text-white hover:bg-white/10 rounded-full transition-colors"
+            aria-label="Close audio result"
+          >
+            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+          <div className="pr-6">
+            <span className="font-semibold">Audio Result:</span> {formatText(audioResult)}
+          </div>
         </div>
       )}
       {/* Chat Dialog Overlay */}
