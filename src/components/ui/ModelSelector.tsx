@@ -129,7 +129,7 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ onModelChange, onChatOpen
   }
 
   return (
-    <div className="p-4 bg-white/10 backdrop-blur-md rounded-lg space-y-4">
+    <div className="p-4 bg-black/40 backdrop-blur-md rounded-lg space-y-4">
       <div className="flex items-center justify-between">
         <h3 className="text-xs font-bold text-white">AI Model Selection</h3>
         <div className={`text-xs ${getStatusColor()}`}>
@@ -139,7 +139,7 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ onModelChange, onChatOpen
 
       {/* Current Status */}
       {currentConfig && (
-        <div className="text-sm font-bold text-white bg-white/40 p-2 rounded">
+        <div className="text-xs font-bold text-white bg-black/40 p-2 rounded">
           {currentConfig.provider === 'ollama' ? 'Local' : 'Cloud'} {currentConfig.model}
         </div>
       )}
@@ -152,7 +152,7 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ onModelChange, onChatOpen
             onClick={() => setSelectedProvider('gemini')}
             className={`flex-1 px-3 py-2 rounded text-xs transition-all ${
               selectedProvider === 'gemini'
-                ? 'bg-blue-500 text-white shadow-md'
+                ? 'bg-white/100 text-black/100 shadow-md'
                 : 'bg-white/40 text-sm font-bold text-white hover:bg-white/60'
             }`}
           >
@@ -162,7 +162,7 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ onModelChange, onChatOpen
             onClick={() => setSelectedProvider('ollama')}
             className={`flex-1 px-3 py-2 rounded text-xs transition-all ${
               selectedProvider === 'ollama'
-                ? 'bg-blue-500 text-white shadow-md'
+                ? 'bg-white/100 text-black/100 shadow-md'
                 : 'bg-white/40 text-sm font-bold text-white hover:bg-white/60'
             }`}
           >
@@ -180,7 +180,7 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ onModelChange, onChatOpen
             placeholder="Enter API key to update"
             value={geminiApiKey}
             onChange={(e) => setGeminiApiKey(e.target.value)}
-            className="w-full px-3 py-2 text-xs bg-white/40 rounded focus:outline-none focus:ring-2 focus:ring-gray-400/60"
+            className="w-full px-3 py-2 text-xs bg-black/40 rounded focus:outline-none focus:ring-2 focus:ring-gray-400/60"
           />
         </div>
       ) : (
@@ -233,7 +233,7 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ onModelChange, onChatOpen
         <button
           onClick={handleProviderSwitch}
           disabled={connectionStatus === 'testing'}
-          className="flex-1 px-3 py-2 bg-blue-500 hover:bg-blue-600 disabled:bg-gray-400 text-white text-xs rounded transition-all shadow-md"
+          className="flex-1 px-3 py-2 bg-white/100 hover:bg-gray-10 disabled:bg-gray-400 text-black/100 text-xs rounded transition-all shadow-md"
         >
           {connectionStatus === 'testing' ? 'Switching...' : 'Apply Changes'}
         </button>
