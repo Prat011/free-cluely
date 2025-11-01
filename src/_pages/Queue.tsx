@@ -355,7 +355,7 @@ const Queue: React.FC<QueueProps> = ({ setView }) => {
           {/* Conditional Chat Interface */}
           {isChatOpen && (
             <div className="mt-4 w-full mx-auto liquid-glass chat-container p-4 flex flex-col">
-            <div className="flex-1 overflow-y-auto mb-3 p-3 rounded-lg bg-black/20 backdrop-blur-md max-h-64 min-h-[120px] glass-content shadow-lg">
+            <div className="h-64 overflow-y-auto mb-3 p-3 rounded-lg bg-black/20 backdrop-blur-md glass-content shadow-lg">
               {chatMessages.length === 0 ? (
                 <div className="text-xs font-bold text-white text-center mt-8">
                   <span className="text-xs font-bold text-white">Take a screenshot (Cmd+H) for automatic analysis</span>
