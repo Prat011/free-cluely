@@ -10,14 +10,14 @@ import type {
   LlmRequestOptions,
   LlmResponseChunk,
   LlmMetrics,
-} from "../main/engines/llm/types"
+} from "../src/main/engines/llm/types"
 import type {
   HaloSession,
   Message,
   ContextItem,
   TranscriptSegment,
-} from "../main/state/StateTypes"
-import type { SessionQuery, SessionStats } from "../main/engines/session"
+} from "../src/main/state/StateTypes"
+import type { SessionQuery, SessionStats } from "../src/main/engines/session"
 
 // ============================================================================
 // HORALIX HALO API

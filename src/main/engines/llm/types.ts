@@ -15,7 +15,24 @@ import {
   AnswerType,
   MeetingActionType,
   MeetingContext,
+  TokenUsage,
+  LlmMetrics,
 } from "../../state/StateTypes"
+
+// Re-export for convenience
+export type {
+  LlmProviderId,
+  LlmModelConfig,
+  LlmRequestOptions,
+  LlmResponseChunk,
+  Message,
+  SessionMode,
+  AnswerType,
+  MeetingActionType,
+  MeetingContext,
+  TokenUsage,
+  LlmMetrics,
+}
 
 // ============================================================================
 // PROVIDER INTERFACE

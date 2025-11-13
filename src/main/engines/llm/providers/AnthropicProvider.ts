@@ -304,7 +304,9 @@ export class AnthropicProvider implements LlmProvider {
             break
 
           case "error":
-            throw new Error(chunk.error.message)
+            // Handle error event
+            const errorChunk = chunk as any
+            throw new Error(errorChunk.error?.message || "Stream error")
         }
       }
     } catch (error: any) {

@@ -355,10 +355,12 @@ export class LlmEngine extends EventEmitter {
       modelId: options.modelId,
       content: content || finalChunk.content,
       reasoningContent: finalChunk.reasoningContent,
-      usage: finalChunk.usage || {
-        inputTokens: 0,
-        outputTokens: 0,
-        totalTokens: 0,
+      usage: {
+        inputTokens: finalChunk.usage?.inputTokens || 0,
+        outputTokens: finalChunk.usage?.outputTokens || 0,
+        totalTokens: finalChunk.usage?.totalTokens || 0,
+        cachedTokens: finalChunk.usage?.cachedTokens,
+        reasoningTokens: finalChunk.usage?.reasoningTokens,
       },
       latencyMs: 0,
       fromCache: false,
@@ -544,11 +546,16 @@ export class LlmEngine extends EventEmitter {
     for (let attempt = 0; attempt < maxAttempts; attempt++) {
       try {
         // Execute request
-        const stream = provider.complete(request)
+        const result = provider.complete(request)
 
         let contentAccumulator = ""
         let reasoningAccumulator = ""
         let finalUsage: any = null
+
+        // Convert Promise to AsyncIterable if needed
+        const stream = Symbol.asyncIterator in result
+          ? result
+          : (async function*() { yield await result as Promise<LlmResponseChunk> })()
 
         for await (const chunk of stream) {
           if (chunk.type === "delta") {
@@ -649,6 +656,21 @@ export class LlmEngine extends EventEmitter {
   // ========================================================================
 
   getMetrics(): LlmMetrics {
+    // Initialize provider usage with all provider IDs
+    const providerUsage: Record<LlmProviderId, number> = {
+      deepseek: 0,
+      openai: 0,
+      anthropic: 0,
+      google: 0,
+      ollama: 0,
+      custom: 0,
+    }
+
+    // Update with actual usage from providers
+    for (const [providerId] of this.providers.entries()) {
+      providerUsage[providerId] = 0 // TODO: Track actual usage per provider
+    }
+
     return {
       totalRequests: this.requestCount,
       successfulRequests: this.successCount,
@@ -658,13 +680,17 @@ export class LlmEngine extends EventEmitter {
       averageLatencyMs: 0, // TODO: Track latency
       cacheHitRate:
         this.cacheHits / (this.cacheHits + this.cacheMisses || 1),
-      providerUsage: {}, // TODO: Track provider usage
+      providerUsage,
       errorRate: this.errorCount / (this.requestCount || 1),
     }
   }
 
   getCostStats() {
     return this.costTracker.getStats()
+  }
+
+  getCostByProvider(): Record<LlmProviderId, number> {
+    return this.costTracker.getStats().costByProvider as Record<LlmProviderId, number>
   }
 
   getCacheStats() {

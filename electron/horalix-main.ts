@@ -37,11 +37,11 @@ async function initializeEngines(): Promise<void> {
   const providerConfigs: Record<string, ProviderConfig> = {
     deepseek: {
       apiKey: process.env.DEEPSEEK_API_KEY || "",
-      baseURL: process.env.DEEPSEEK_BASE_URL,
+      baseUrl: process.env.DEEPSEEK_BASE_URL,
     },
     openai: {
       apiKey: process.env.OPENAI_API_KEY || "",
-      baseURL: process.env.OPENAI_BASE_URL,
+      baseUrl: process.env.OPENAI_BASE_URL,
     },
     anthropic: {
       apiKey: process.env.ANTHROPIC_API_KEY || "",
@@ -50,7 +50,7 @@ async function initializeEngines(): Promise<void> {
       apiKey: process.env.GOOGLE_API_KEY || "",
     },
     ollama: {
-      baseURL: process.env.OLLAMA_BASE_URL || "http://localhost:11434",
+      baseUrl: process.env.OLLAMA_BASE_URL || "http://localhost:11434",
     },
   }
 
@@ -58,8 +58,8 @@ async function initializeEngines(): Promise<void> {
 
   llmEngine = new LlmEngine({
     providers,
-    cacheSize: 100,
-    cacheTTL: 3600000, // 1 hour
+    cacheConfig: { maxSizeMB: 100, ttlMs: 3600000, strategy: "lru" },
+    
   })
   console.log("[Horalix] LlmEngine initialized with", providers.size, "providers")
 
@@ -84,7 +84,7 @@ function createWindow(): void {
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
-      preload: path.join(__dirname, "preload.js"),
+      preload: path.join(__dirname, "horalix-preload.js"),
     },
   })
 
