@@ -1,259 +1,281 @@
-# Cluely
+# 🎯 Horalix Halo - Next-Generation AI Desktop Assistant
 
-[Cluely](https://cluely.com) - The invisible desktop assistant that provides real-time insights, answers, and support during meetings, interviews, presentations, and professional conversations.
+> "A silent AI halo around your work: meetings, code, and research."
 
-## Sponsored by Recall AI - API for desktop recording
-If you’re looking for a hosted desktop recording API, consider checking out [Recall.ai](https://www.recall.ai/product/desktop-recording-sdk?utm_source=github&utm_medium=sponsorship&utm_campaign=prat011-free-cluely), an API that records Zoom, Google Meet, Microsoft Teams, in-person meetings, and more.
+**Horalix Halo** is a powerful, beautiful desktop AI assistant built with cutting-edge technology. It combines multi-provider LLM support, intelligent mode switching, real-time meeting assistance, and a stunning glassmorphism UI into one seamless experience.
 
-## 🚀 Quick Start Guide
+[![License](https://img.shields.io/badge/license-ISC-blue.svg)](LICENSE)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.6-blue.svg)](https://www.typescriptlang.org/)
+[![Electron](https://img.shields.io/badge/Electron-33.2-brightgreen.svg)](https://www.electronjs.org/)
+[![React](https://img.shields.io/badge/React-18.3-61dafb.svg)](https://reactjs.org/)
+
+---
+
+## ✨ Key Features
+
+### 🧠 **Multi-Provider AI System**
+- **5 AI Providers**: DeepSeek (primary), OpenAI, Anthropic (Claude), Google (Gemini), Ollama
+- **15+ Models**: GPT-4, Claude Sonnet 4, Gemini 2.0 Flash, DeepSeek V3, Llama 3.2, and more
+- **Real-time Streaming**: SSE streaming with reasoning extraction
+- **Smart Caching**: LRU cache with automatic fallback and cost tracking
+
+### 🎯 **Intelligent Mode System**
+- **Auto Mode**: AI automatically detects the best approach
+- **Coding Mode**: Optimized for development (low temperature, best practices)
+- **Meeting Mode**: Real-time transcription + 9 specialized quick actions
+- **Research Mode**: Deep analysis with comprehensive responses
+
+### 📝 **Answer Type Control (9 Types)**
+Choose exactly how the AI responds:
+- Auto, Short, Detailed, Step-by-Step
+- Code-Only, ELI5, Concise
+- Conversational, Academic
+
+### 🎙️ **Meeting Experience**
+9 specialized quick actions:
+1. Quick Summary
+2. Action Items extraction
+3. Key Decisions highlight
+4. Follow-up suggestions
+5. Explain Technical concepts
+6. Clarify Points
+7. Counter-Arguments
+8. Generate Response
+9. Email Draft
+
+### 💎 **Premium UI/UX**
+- **Glassmorphism Design**: Beautiful iOS/macOS-inspired aesthetic
+- **Purple/Indigo/Teal Gradients**: Professional brand identity
+- **Framer Motion Animations**: Smooth, buttery transitions
+- **Keyboard-First**: Every action has a shortcut
+- **Dark Theme**: Easy on the eyes
+
+### 💾 **Persistent Sessions**
+- **SQLite Database**: All conversations saved locally
+- **Full-text Search**: Find any message instantly
+- **Context Management**: Screenshots, notes, clipboard history
+- **Session History**: Resume conversations anytime
+
+---
+
+## 🚀 Quick Start
 
 ### Prerequisites
-- Make sure you have Node.js installed on your computer
-- Git installed on your computer  
-- **Either** a Gemini API key (get it from [Google AI Studio](https://makersuite.google.com/app/apikey))
-- **Or** Ollama installed locally for private LLM usage (recommended for privacy)
+- Node.js (v18+ recommended)
+- At least one AI provider API key (DeepSeek recommended for best cost/performance)
 
-### Installation Steps
+### Installation
 
-1. Clone the repository:
 ```bash
-git clone [repository-url]
+# Clone the repository
+git clone <repository-url>
 cd free-cluely
-```
 
-2. Install dependencies:
-```bash
-# If you encounter Sharp/Python build errors, use this:
-SHARP_IGNORE_GLOBAL_LIBVIPS=1 npm install --ignore-scripts
-npm rebuild sharp
-
-# Or for normal installation:
+# Install dependencies
 npm install
+
+# Set up environment variables
+cp .env.example .env
+# Edit .env and add your API keys
 ```
 
-3. Set up environment variables:
-   - Create a file named `.env` in the root folder
-   
-   **For Gemini (Cloud AI):**
-   ```env
-   GEMINI_API_KEY=your_api_key_here
-   ```
-   
-   **For Ollama (Local/Private AI):**
-   ```env
-   USE_OLLAMA=true
-   OLLAMA_MODEL=llama3.2
-   OLLAMA_URL=http://localhost:11434
-   ```
-   
-   - Save the file
+### Environment Setup
 
-### Running the App
+Create a `.env` file:
 
-#### Method 1: Development Mode (Recommended for first run)
-1. Start the development server:
+```env
+# DeepSeek (Recommended - Best value)
+DEEPSEEK_API_KEY=your_deepseek_key_here
+
+# Optional: Other Providers
+OPENAI_API_KEY=your_openai_key
+ANTHROPIC_API_KEY=your_anthropic_key
+GOOGLE_API_KEY=your_google_key
+
+# Optional: Local AI
+OLLAMA_BASE_URL=http://localhost:11434
+```
+
+### Run Development Mode
+
 ```bash
 npm start
 ```
 
-This command automatically:
-- Starts the Vite dev server on port 5180
-- Waits for the server to be ready
-- Launches the Electron app
+This will:
+1. Start Vite dev server on port 5180
+2. Compile TypeScript for Electron
+3. Launch the app with hot reload
 
-#### Method 2: Production Build
+### Build for Production
+
 ```bash
-npm run dist
+npm run app:build
 ```
-The built app will be in the `release` folder.
 
-## 🤖 AI Provider Options
+Creates distributable packages in `release/`:
+- **macOS**: `.dmg` (x64, arm64)
+- **Windows**: `.exe` installer + portable
+- **Linux**: AppImage, `.deb`
 
-### Ollama (Recommended for Privacy)
-**Pros:**
-- 100% private - data never leaves your computer
-- No API costs
-- Works offline
-- Supports many models: llama3.2, codellama, mistral, etc.
+---
 
-**Setup:**
-1. Install Ollama from [ollama.ai](https://ollama.ai)
-2. Pull a model: `ollama pull llama3.2`
-3. Set environment variables as shown above
+## ⌨️ Keyboard Shortcuts
 
-### Google Gemini
-**Pros:**
-- Latest AI technology
-- Fastest responses
-- Best accuracy for complex tasks
+### Global
+- `⌘K` / `Ctrl+K` - **Command Palette** (fuzzy search all commands)
+- `⌘,` / `Ctrl+,` - **Settings**
+- `⌘B` / `Ctrl+B` - **Toggle Sidebar**
+- `⌘⇧Space` - **Toggle Overlay**
+- `ESC` - Close dialogs
 
-**Cons:**
-- Requires API key and internet
-- Data sent to Google servers
-- Usage costs apply
+### Chat
+- `Enter` - Send message
+- `Shift+Enter` - New line
 
-### ⚠️ Important Notes
+### Meeting Mode
+- `⌘1-9` - Quick actions 1-9
 
-1. **Closing the App**: 
-   - Press `Cmd + Q` (Mac) or `Ctrl + Q` (Windows/Linux) to quit
-   - Or use Activity Monitor/Task Manager to close `Interview Coder`
-   - The X button currently doesn't work (known issue)
+---
 
-2. **If the app doesn't start**:
-   - Make sure no other app is using port 5180
-   - Try killing existing processes:
-     ```bash
-     # Find processes using port 5180
-     lsof -i :5180
-     # Kill them (replace [PID] with the process ID)
-     kill [PID]
-     ```
-   - For Ollama users: Make sure Ollama is running (`ollama serve`)
+## 📖 Full Documentation
 
-3. **Keyboard Shortcuts**:
-   - `Cmd/Ctrl + B`: Toggle window visibility
-   - `Cmd/Ctrl + H`: Take screenshot
-   - 'Cmd/Enter': Get solution
-   - `Cmd/Ctrl + Arrow Keys`: Move window
+For comprehensive documentation including:
+- Complete architecture overview
+- Detailed file structure
+- Code examples
+- API reference
+- Performance metrics
+- Security details
 
-## 🔧 Troubleshooting
+**See: [HORALIX_HALO_COMPLETE.md](./HORALIX_HALO_COMPLETE.md)**
 
-### Windows Issues Fixed 
-- **UI not loading**: Port mismatch resolved
-- **Electron crashes**: Improved error handling  
-- **Build failures**: Production config updated
-- **Window focus problems**: Platform-specific fixes applied
+---
 
-### Ubuntu/Linux Issues Fixed 
-- **Window interaction**: Fixed focusable settings
-- **Installation confusion**: Clear setup instructions
-- **Missing dependencies**: All requirements documented
+## 🎨 Screenshots
 
-### Common Solutions
+### Main Chat Interface
+Beautiful glassmorphism design with real-time streaming responses.
 
-#### Sharp/Python Build Errors
-If you see `gyp ERR! find Python` or Sharp build errors:
+### Meeting Mode
+Quick action toolbar with 9 specialized meeting assistance features.
+
+### Command Palette
+Fuzzy search across all commands with keyboard navigation.
+
+### Context Panel
+Manage screenshots, transcripts, notes, and clipboard history.
+
+---
+
+## 🏗️ Architecture
+
+```
+┌─────────────────────────────────────────────┐
+│  Renderer (React + Zustand)                 │
+│  ├─ ChatPanel                               │
+│  ├─ ContextPanel                            │
+│  ├─ MeetingToolbar                          │
+│  └─ CommandPalette                          │
+└─────────────────────────────────────────────┘
+              ↕ IPC (window.horalix)
+┌─────────────────────────────────────────────┐
+│  Main Process (Electron)                    │
+│  ├─ LLM Engine (5 providers)                │
+│  ├─ Session Engine (SQLite)                 │
+│  └─ IPC Handlers                            │
+└─────────────────────────────────────────────┘
+```
+
+---
+
+## 🆚 Comparison
+
+### vs. ChatGPT Desktop
+✅ Multi-provider (not locked to OpenAI)
+✅ Meeting transcription
+✅ Screenshot context
+✅ Answer type control
+✅ Session persistence
+✅ Keyboard-first design
+
+### vs. Cursor
+✅ Meeting mode
+✅ Multi-provider
+✅ Context management
+✅ Cost tracking
+✅ Glassmorphism UI
+✅ Command palette
+
+### vs. Free Cluely (Original)
+✅ 5 providers (was 2)
+✅ SQLite persistence
+✅ Beautiful UI
+✅ Meeting mode
+✅ Answer types
+✅ Command palette
+
+---
+
+## 💻 Tech Stack
+
+- **Electron** 33.2 - Desktop app framework
+- **React** 18.3 - UI library
+- **TypeScript** 5.6 - Type safety
+- **Tailwind CSS** 3.4 - Styling
+- **Framer Motion** 11 - Animations
+- **Zustand** 5.0 - State management
+- **better-sqlite3** - Database
+- **react-markdown** - Markdown rendering
+
+---
+
+## 🐛 Troubleshooting
+
+### App won't start
 ```bash
-# Solution 1: Use prebuilt binaries
+# Kill processes on port 5180
+lsof -i :5180
+kill <PID>
+
+# Clean install
 rm -rf node_modules package-lock.json
-SHARP_IGNORE_GLOBAL_LIBVIPS=1 npm install --ignore-scripts
-npm rebuild sharp
-
-# Solution 2: Or install Python (if you prefer building from source)
-brew install python3  # macOS
-# Then run: npm install
+npm install
 ```
 
-#### General Installation Issues
-If you see other errors:
-1. Delete the `node_modules` folder
-2. Delete `package-lock.json` 
-3. Run `npm install` again
-4. Try running with `npm start`
+### No AI responses
+1. Check API keys in `.env`
+2. Verify provider is online
+3. Check console logs (`⌘⌥I`)
 
-### Platform-Specific Notes
-- **Windows**: App now works on Windows 10/11
-- **Ubuntu/Linux**: Tested on Ubuntu 20.04+ and most Linux distros  
-- **macOS**: Native support with proper window management
-
-## Key Features
-
-### **Invisible AI Assistant**
-- Translucent, always-on-top window that's barely noticeable
-- Hide/show instantly with global hotkeys
-- Works seamlessly across all applications
-
-### **Smart Screenshot Analysis** 
-- Take screenshots of any content with `Cmd/Ctrl + H`
-- AI analyzes images, documents, presentations, or problems
-- Get instant explanations, answers, and solutions
-
-### **Audio Intelligence**
-- Process audio files and recordings
-- Real-time transcription and analysis
-- Perfect for meeting notes and content review
-
-### **Contextual Chat**
-- Chat with AI about anything you see on screen
-- Maintains conversation context
-- Ask follow-up questions for deeper insights
-
-### **Privacy-First Design**
-- **Local AI Option**: Use Ollama for 100% private processing
-- **Cloud Option**: Google Gemini for maximum performance
-- Screenshots auto-deleted after processing
-- No data tracking or storage
-
-### **Cross-Platform Support**
-- **Windows 10/11** - Full support with native performance
-- **Ubuntu/Linux** - Optimized for all major distributions  
-- **macOS** - Native window management and shortcuts
-
-## Use Cases
-
-### **Academic & Learning**
-```
-✓ Live presentation support during classes
-✓ Quick research during online exams  
-✓ Language translation and explanations
-✓ Math and science problem solving
-```
-
-### **Professional Meetings**
-```
-✓ Sales call preparation and objection handling
-✓ Technical interview coaching
-✓ Client presentation support
-✓ Real-time fact-checking and data lookup
-```
-
-### **Development & Tech**
-```
-✓ Debug error messages instantly
-✓ Code explanation and optimization
-✓ Documentation and API references
-✓ Algorithm and architecture guidance
-```
-
-## Why Choose Free Cluely?
-
-| Feature | Free Cluely | Commercial Alternatives |
-|---------|-------------|------------------------|
-| **Cost** | 100% Free | $29-99/month |
-| **Privacy** | Local AI Option | Cloud-only |
-| **Open Source** | Full transparency | Closed source |
-| **Customization** | Fully customizable | Limited options |
-| **Data Control** | You own your data | Third-party servers |
-| **Offline Mode** | Yes (with Ollama) | No |
-
-## Technical Details
-
-### **AI Models Supported**
-- **Gemini 2.0 Flash** - Latest Google AI with vision capabilities
-- **Llama 3.2** - Meta's advanced local model via Ollama
-- **CodeLlama** - Specialized coding assistance
-- **Mistral** - Lightweight, fast responses
-- **Custom Models** - Any Ollama-compatible model
-
-### **System Requirements**
+### Build errors
 ```bash
-Minimum:  4GB RAM, Dual-core CPU, 2GB storage
-Recommended: 8GB+ RAM, Quad-core CPU, 5GB+ storage
-Optimal: 16GB+ RAM for local AI models
+# Clean build
+npm run clean
+npm install
+npm run build
 ```
+
+---
 
 ## 🤝 Contributing
 
-This project welcomes contributions! While I have limited time for active maintenance, I'll review and merge quality PRs.
+We welcome contributions! Please:
 
-**Ways to contribute:**
-- 🐛 Bug fixes and stability improvements
-- ✨ New features and AI model integrations  
-- 📚 Documentation and tutorial improvements
-- 🌍 Translations and internationalization
-- 🎨 UI/UX enhancements
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Add tests if applicable
+5. Submit a pull request
 
-For commercial integrations or custom development, reach out on [Twitter](https://x.com/prathitjoshi_)
+**Priority areas:**
+- Provider configuration UI
+- Screenshot OCR integration
+- STT engine for meetings
+- Voice input
+- Plugin system
+
+---
 
 ## 📄 License
 
@@ -261,7 +283,40 @@ ISC License - Free for personal and commercial use.
 
 ---
 
-**⭐ Star this repo if Free Cluely helps you succeed in meetings, interviews, or presentations!**
+## 🙏 Acknowledgments
+
+Inspired by [Free Cluely](https://cluely.com) by [@prathitjoshi_](https://x.com/prathitjoshi_)
+
+Built with ❤️ using:
+- Electron, React, TypeScript
+- DeepSeek, OpenAI, Anthropic, Google, Ollama
+- Tailwind CSS, Framer Motion
+- better-sqlite3, Zustand
+
+---
+
+## 📬 Contact
+
+For questions, feedback, or collaboration:
+- **Issues**: [GitHub Issues](../../issues)
+- **Discussions**: [GitHub Discussions](../../discussions)
+
+---
+
+## ⭐ Support
+
+If Horalix Halo helps you in your work, please consider:
+- ⭐ **Starring this repository**
+- 🐛 **Reporting bugs**
+- 💡 **Suggesting features**
+- 🤝 **Contributing code**
+- 📢 **Spreading the word**
+
+---
 
 ### 🏷️ Tags
-`ai-assistant` `meeting-notes` `interview-helper` `presentation-support` `ollama` `gemini-ai` `electron-app` `cross-platform` `privacy-focused` `open-source` `local-ai` `screenshot-analysis` `academic-helper` `sales-assistant` `coding-companion`
+`ai-assistant` `electron` `react` `typescript` `llm` `chatbot` `openai` `anthropic` `deepseek` `gemini` `ollama` `meeting-assistant` `coding-assistant` `glassmorphism` `desktop-app` `cross-platform` `multi-provider` `real-time-streaming` `command-palette` `sqlite` `zustand`
+
+---
+
+**Built with 💜 by the Horalix team**
