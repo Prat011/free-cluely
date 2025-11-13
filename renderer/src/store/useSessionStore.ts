@@ -58,6 +58,7 @@ export interface SessionState {
   removeContextItem: (itemId: string) => void
   toggleContextSelection: (itemId: string) => void
   clearContextSelection: () => void
+  clearContext: () => void
   pinContextItem: (itemId: string) => void
 
   // Actions - Transcripts
@@ -223,6 +224,8 @@ export const useSessionStore = create<SessionState>((set, get) => ({
   },
 
   clearContextSelection: () => set({ selectedContextIds: [] }),
+
+  clearContext: () => set({ contextItems: [], selectedContextIds: [] }),
 
   pinContextItem: (itemId) => {
     set({
