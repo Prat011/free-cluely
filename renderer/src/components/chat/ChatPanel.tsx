@@ -51,26 +51,97 @@ export const ChatPanel: React.FC = () => {
     e.preventDefault()
     if (!input.trim() || isProcessing) return
 
+    const userMessage = input.trim()
+
     // Add user message
     addMessage({
       sessionId: "", // Will be set by store
       role: "user",
-      content: input.trim(),
+      content: userMessage,
     })
 
     setInput("")
     setProcessing(true)
 
-    // TODO: Call LLM Engine via IPC
-    // For now, simulate
-    setTimeout(() => {
+    // Call LLM Engine via IPC
+    try {
+      const { activeProfile, providers } = useSettingsStore.getState()
+      const { currentMode, currentAnswerType, updateStreamingMessage, finalizeStreamingMessage } = useSessionStore.getState()
+
+      // Get provider config based on profile
+      const providerConfig = getProviderForProfile(activeProfile, providers)
+
+      // Build chat history
+      const chatHistory = messages.map((msg) => ({
+        role: msg.role as "user" | "assistant",
+        content: msg.content,
+      }))
+
+      // Add current message
+      chatHistory.push({
+        role: "user",
+        content: userMessage,
+      })
+
+      // Stream response
+      let fullContent = ""
+      let fullReasoning = ""
+      const messageId = `msg_${Date.now()}_${Math.random().toString(36).slice(2)}`
+
+      const cleanup = window.horalix.llm.stream(
+        {
+          provider: providerConfig.provider,
+          model: providerConfig.model,
+          messages: chatHistory,
+          temperature: providerConfig.temperature || 0.7,
+          mode: currentMode,
+          answerType: currentAnswerType,
+        },
+        // onChunk
+        (chunk) => {
+          if (chunk.type === "content") {
+            fullContent += chunk.delta
+            updateStreamingMessage(fullContent, fullReasoning)
+          } else if (chunk.type === "reasoning") {
+            fullReasoning += chunk.delta
+            updateStreamingMessage(fullContent, fullReasoning)
+          }
+        },
+        // onComplete
+        () => {
+          finalizeStreamingMessage(messageId, fullContent, fullReasoning || undefined)
+        },
+        // onError
+        (error) => {
+          console.error("[ChatPanel] LLM error:", error)
+          addMessage({
+            sessionId: "",
+            role: "assistant",
+            content: `❌ Error: ${error.message}`,
+          })
+          setProcessing(false)
+        }
+      )
+    } catch (error: any) {
+      console.error("[ChatPanel] Submit error:", error)
       addMessage({
         sessionId: "",
         role: "assistant",
-        content: "This is a simulated response. LLM integration coming next!",
+        content: `❌ Error: ${error.message || "Unknown error occurred"}`,
       })
       setProcessing(false)
-    }, 1000)
+    }
+  }
+
+  // Helper function to get provider config based on profile
+  const getProviderForProfile = (profile: string, providers: any) => {
+    // TODO: Implement proper profile-based provider selection
+    // For now, return default DeepSeek config
+    return {
+      provider: "deepseek" as const,
+      model: "deepseek-chat",
+      temperature: profile === "speed" ? 0.5 : profile === "quality" ? 0.3 : 0.7,
+    }
   }
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
