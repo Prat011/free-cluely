@@ -310,7 +310,7 @@ export class DeepSeekProvider implements LlmProvider {
 
   private async *streamRequest(
     request: DeepSeekCompletionRequest,
-    modelId: string
+    _modelId: string
   ): AsyncIterable<LlmResponseChunk> {
     const requestId = this.generateRequestId()
     const controller = new AbortController()
@@ -429,7 +429,7 @@ export class DeepSeekProvider implements LlmProvider {
 
   private convertResponse(
     response: DeepSeekCompletionResponse,
-    modelId: string
+    _modelId: string
   ): LlmResponseChunk {
     const choice = response.choices[0]
 

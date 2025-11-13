@@ -101,7 +101,7 @@ export class OllamaProvider implements LlmProvider {
     }
   }
 
-  async cancel(requestId: string): Promise<void> {
+  async cancel(_requestId: string): Promise<void> {
     // Ollama doesn't support cancellation well, but we can try
   }
 

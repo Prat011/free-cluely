@@ -170,12 +170,18 @@ export class AnthropicProvider implements LlmProvider {
   // COMPLETION
   // ========================================================================
 
+  /**
+   * Complete a chat request using Anthropic Claude models
+   * Supports both streaming and non-streaming responses
+   * @param options LLM request options including model, messages, and parameters
+   * @yields LlmResponseChunk objects for streaming or single final chunk
+   */
   async *complete(
     options: LlmRequestOptions
   ): AsyncIterable<LlmResponseChunk> {
     if (!this.client) {
       throw new LlmError(
-        "Client not initialized",
+        "Client not initialized. Call initialize() with API key first.",
         LlmErrorCode.INVALID_REQUEST,
         this.id,
         false
@@ -220,7 +226,11 @@ export class AnthropicProvider implements LlmProvider {
     if (stream) {
       yield* this.streamRequest(request)
     } else {
-      const response = await this.client.messages.create(request)
+      // Non-streaming returns a Message directly
+      const response = await this.client.messages.create({
+        ...request,
+        stream: false,
+      }) as Anthropic.Message
       yield this.convertResponse(response)
     }
   }
@@ -264,50 +274,39 @@ export class AnthropicProvider implements LlmProvider {
       let outputTokens = 0
 
       for await (const chunk of stream) {
-        switch (chunk.type) {
-          case "message_start":
-            inputTokens = chunk.message.usage.input_tokens
-            break
-
-          case "content_block_delta":
-            if (chunk.delta.type === "text_delta") {
-              const text = chunk.delta.text
-              contentAccumulator += text
-              yield {
-                type: "delta",
-                content: text,
-              }
+        // Type guard for standard message stream events
+        if (chunk.type === "message_start") {
+          inputTokens = chunk.message.usage.input_tokens
+        } else if (chunk.type === "content_block_delta") {
+          if (chunk.delta.type === "text_delta") {
+            const text = chunk.delta.text
+            contentAccumulator += text
+            yield {
+              type: "delta",
+              content: text,
             }
-            break
+          }
+        } else if (chunk.type === "message_delta") {
+          if (chunk.usage) {
+            outputTokens = chunk.usage.output_tokens
+          }
 
-          case "message_delta":
-            if (chunk.usage) {
-              outputTokens = chunk.usage.output_tokens
+          if (chunk.delta.stop_reason) {
+            yield {
+              type: "final",
+              content: contentAccumulator,
+              usage: {
+                inputTokens,
+                outputTokens,
+                totalTokens: inputTokens + outputTokens,
+              },
+              finishReason: this.mapStopReason(chunk.delta.stop_reason),
             }
-
-            if (chunk.delta.stop_reason) {
-              yield {
-                type: "final",
-                content: contentAccumulator,
-                usage: {
-                  inputTokens,
-                  outputTokens,
-                  totalTokens: inputTokens + outputTokens,
-                },
-                finishReason: this.mapStopReason(chunk.delta.stop_reason),
-              }
-            }
-            break
-
-          case "message_stop":
-            // Final message
-            break
-
-          case "error":
-            // Handle error event
-            const errorChunk = chunk as any
-            throw new Error(errorChunk.error?.message || "Stream error")
+          }
+        } else if (chunk.type === "message_stop") {
+          // Final message - stream complete
         }
+        // Note: Error handling is done via try-catch wrapper
       }
     } catch (error: any) {
       throw this.wrapError(error)

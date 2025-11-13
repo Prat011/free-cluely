@@ -5,7 +5,7 @@
  * Designed for maximum extensibility and type safety.
  */
 
-import {
+import type {
   LlmProviderId,
   LlmModelConfig,
   LlmRequestOptions,
@@ -16,7 +16,6 @@ import {
   MeetingActionType,
   MeetingContext,
   TokenUsage,
-  LlmMetrics,
 } from "../../state/StateTypes"
 
 // Re-export for convenience
@@ -31,7 +30,6 @@ export type {
   MeetingActionType,
   MeetingContext,
   TokenUsage,
-  LlmMetrics,
 }
 
 // ============================================================================

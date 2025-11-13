@@ -148,12 +148,18 @@ export class GoogleProvider implements LlmProvider {
   // COMPLETION
   // ========================================================================
 
+  /**
+   * Complete a chat request using Google Gemini models
+   * Supports both streaming and non-streaming responses
+   * @param options LLM request options including model, messages, and parameters
+   * @yields LlmResponseChunk objects for streaming or single final chunk
+   */
   async *complete(
     options: LlmRequestOptions
   ): AsyncIterable<LlmResponseChunk> {
     if (!this.genAI) {
       throw new LlmError(
-        "Client not initialized",
+        "Client not initialized. Call initialize() with API key first.",
         LlmErrorCode.INVALID_REQUEST,
         this.id,
         false
@@ -198,13 +204,19 @@ export class GoogleProvider implements LlmProvider {
       } else {
         const result = await model.generateContent(geminiMessages)
         const response = await result.response
+        // Google SDK uses usageMetadata but it's not in the type definitions
+        const metadata = (response as any).usageMetadata as {
+          promptTokenCount?: number
+          candidatesTokenCount?: number
+          totalTokenCount?: number
+        } | undefined
         yield {
           type: "final",
           content: response.text(),
           usage: {
-            inputTokens: response.usageMetadata?.promptTokenCount || 0,
-            outputTokens: response.usageMetadata?.candidatesTokenCount || 0,
-            totalTokens: response.usageMetadata?.totalTokenCount || 0,
+            inputTokens: metadata?.promptTokenCount || 0,
+            outputTokens: metadata?.candidatesTokenCount || 0,
+            totalTokens: metadata?.totalTokenCount || 0,
           },
           finishReason: "stop",
         }
@@ -214,7 +226,7 @@ export class GoogleProvider implements LlmProvider {
     }
   }
 
-  async cancel(requestId: string): Promise<void> {
+  async cancel(_requestId: string): Promise<void> {
     // Gemini SDK doesn't support cancellation well
   }
 
@@ -248,13 +260,19 @@ export class GoogleProvider implements LlmProvider {
       }
 
       const response = await result.response
+      // Google SDK uses usageMetadata but it's not in the type definitions
+      const metadata = (response as any).usageMetadata as {
+        promptTokenCount?: number
+        candidatesTokenCount?: number
+        totalTokenCount?: number
+      } | undefined
       yield {
         type: "final",
         content: contentAccumulator,
         usage: {
-          inputTokens: response.usageMetadata?.promptTokenCount || 0,
-          outputTokens: response.usageMetadata?.candidatesTokenCount || 0,
-          totalTokens: response.usageMetadata?.totalTokenCount || 0,
+          inputTokens: metadata?.promptTokenCount || 0,
+          outputTokens: metadata?.candidatesTokenCount || 0,
+          totalTokens: metadata?.totalTokenCount || 0,
         },
         finishReason: "stop",
       }
