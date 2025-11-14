@@ -62,6 +62,18 @@ export interface AiUsage {
   createdAt: number // Unix timestamp
 }
 
+export interface WebAuthnCredential {
+  id: string
+  userId: string
+  credentialId: string // Base64URL encoded credential ID
+  publicKey: string // Base64URL encoded public key
+  counter: number // Signature counter
+  transports: string | null // JSON array of transport types
+  deviceName: string | null // User-friendly device name
+  createdAt: number // Unix timestamp
+  lastUsedAt: number | null // Unix timestamp
+}
+
 // ============================================================================
 // API REQUEST/RESPONSE TYPES
 // ============================================================================
