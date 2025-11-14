@@ -23,6 +23,7 @@ import meetingsRoutes from './routes/meetings'
 import webhooksRoutes from './routes/webhooks'
 import calendarRoutes from './routes/calendar'
 import knowledgeRoutes from './routes/knowledge'
+import licenseRoutes from './routes/licenses'
 
 // Import middleware
 import { errorHandler, notFoundHandler } from './middleware/errorHandler'
@@ -98,6 +99,7 @@ app.use('/api/meetings', meetingsRoutes)
 app.use('/api/webhooks', webhooksRoutes)
 app.use('/api/calendar', calendarRoutes)
 app.use('/api/knowledge', knowledgeRoutes)
+app.use('/api/licenses', licenseRoutes)
 
 // ============================================================================
 // DEVELOPMENT ROUTES

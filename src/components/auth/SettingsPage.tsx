@@ -30,6 +30,16 @@ interface KnowledgeDocument {
   createdAt: number
 }
 
+interface License {
+  id: string
+  licenseKey: string
+  planId: string
+  status: string
+  activatedAt: number | null
+  expiresAt: number | null
+  createdAt: number
+}
+
 export function SettingsPage() {
   const { user, token, logout, refreshUser } = useAuth()
   const { subscription, refreshSubscription } = useSubscription()
@@ -45,6 +55,14 @@ export function SettingsPage() {
   const [documents, setDocuments] = useState<KnowledgeDocument[]>([])
   const [loadingDocs, setLoadingDocs] = useState(false)
   const [uploadingDoc, setUploadingDoc] = useState(false)
+
+  // License activation
+  const [licenseKey, setLicenseKey] = useState('')
+  const [activatingLicense, setActivatingLicense] = useState(false)
+  const [licenseError, setLicenseError] = useState('')
+  const [licenseSuccess, setLicenseSuccess] = useState('')
+  const [myLicenses, setMyLicenses] = useState<License[]>([])
+  const [loadingLicenses, setLoadingLicenses] = useState(false)
 
   // Password change
   const [currentPassword, setCurrentPassword] = useState('')
@@ -64,6 +82,13 @@ export function SettingsPage() {
   useEffect(() => {
     if (activeTab === 'knowledge') {
       loadDocuments()
+    }
+  }, [activeTab])
+
+  // Load licenses
+  useEffect(() => {
+    if (activeTab === 'subscription') {
+      loadMyLicenses()
     }
   }, [activeTab])
 
@@ -211,6 +236,66 @@ export function SettingsPage() {
     }
   }
 
+  const loadMyLicenses = async () => {
+    setLoadingLicenses(true)
+    try {
+      const response = await fetch(`${API_URL}/api/licenses/my-licenses`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      })
+      const data = await response.json()
+      if (data.success) {
+        setMyLicenses(data.licenses)
+      }
+    } catch (error) {
+      console.error('Failed to load licenses:', error)
+    } finally {
+      setLoadingLicenses(false)
+    }
+  }
+
+  const handleActivateLicense = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setLicenseError('')
+    setLicenseSuccess('')
+
+    if (!licenseKey.trim()) {
+      setLicenseError('Please enter a license key')
+      return
+    }
+
+    setActivatingLicense(true)
+
+    try {
+      const response = await fetch(`${API_URL}/api/licenses/activate`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ licenseKey: licenseKey.trim() }),
+      })
+
+      const data = await response.json()
+      if (data.success) {
+        setLicenseSuccess(data.message || 'License activated successfully!')
+        setLicenseKey('')
+        // Refresh user data to get updated plan
+        await refreshUser()
+        await refreshSubscription()
+        // Reload licenses
+        loadMyLicenses()
+      } else {
+        setLicenseError(data.error || 'License activation failed')
+      }
+    } catch (error) {
+      setLicenseError('License activation failed')
+    } finally {
+      setActivatingLicense(false)
+    }
+  }
+
   const handleDeleteAccount = async () => {
     if (!confirm('Are you sure you want to delete your account? This action cannot be undone!')) return
 
@@ -312,34 +397,119 @@ export function SettingsPage() {
 
           {/* Subscription Tab */}
           {activeTab === 'subscription' && (
-            <div className="space-y-6">
-              <h2 className="text-2xl font-bold text-white mb-4">Subscription</h2>
-              {subscription ? (
-                <div className="space-y-3">
-                  <div className="flex justify-between py-3 border-b border-gray-700">
-                    <span className="text-gray-400">Plan</span>
-                    <span className="text-white font-semibold uppercase">{subscription.planId}</span>
+            <div className="space-y-8">
+              <div>
+                <h2 className="text-2xl font-bold text-white mb-4">Current Subscription</h2>
+                {subscription ? (
+                  <div className="space-y-3">
+                    <div className="flex justify-between py-3 border-b border-gray-700">
+                      <span className="text-gray-400">Plan</span>
+                      <span className="text-white font-semibold uppercase">{subscription.planId}</span>
+                    </div>
+                    <div className="flex justify-between py-3 border-b border-gray-700">
+                      <span className="text-gray-400">Status</span>
+                      <span className="text-green-400 font-semibold uppercase">{subscription.status}</span>
+                    </div>
+                    <div className="flex justify-between py-3 border-b border-gray-700">
+                      <span className="text-gray-400">Billing</span>
+                      <span className="text-white">{subscription.billingInterval}</span>
+                    </div>
                   </div>
-                  <div className="flex justify-between py-3 border-b border-gray-700">
-                    <span className="text-gray-400">Status</span>
-                    <span className="text-green-400 font-semibold uppercase">{subscription.status}</span>
+                ) : (
+                  <div>
+                    <p className="text-gray-400 mb-4">No active subscription. Upgrade to access premium features!</p>
+                    <a
+                      href="/pricing"
+                      className="inline-block px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-semibold rounded-lg transition"
+                    >
+                      View Plans
+                    </a>
                   </div>
-                  <div className="flex justify-between py-3 border-b border-gray-700">
-                    <span className="text-gray-400">Billing</span>
-                    <span className="text-white">{subscription.billingInterval}</span>
+                )}
+              </div>
+
+              {/* License Activation */}
+              <div className="pt-8 border-t border-purple-500/30">
+                <h2 className="text-2xl font-bold text-white mb-4">Activate License Key</h2>
+                <p className="text-gray-400 mb-4">
+                  Have a license key from your purchase? Enter it below to activate your plan instantly.
+                </p>
+
+                {licenseError && (
+                  <div className="mb-4 p-3 bg-red-500/20 border border-red-500/50 rounded-lg text-red-400 text-sm">
+                    {licenseError}
                   </div>
-                </div>
-              ) : (
-                <div>
-                  <p className="text-gray-400 mb-4">No active subscription. Upgrade to access premium features!</p>
-                  <a
-                    href="/pricing"
-                    className="inline-block px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-semibold rounded-lg transition"
-                  >
-                    View Plans
-                  </a>
-                </div>
-              )}
+                )}
+                {licenseSuccess && (
+                  <div className="mb-4 p-3 bg-green-500/20 border border-green-500/50 rounded-lg text-green-400 text-sm">
+                    {licenseSuccess}
+                  </div>
+                )}
+
+                <form onSubmit={handleActivateLicense} className="space-y-4 max-w-2xl">
+                  <div className="flex gap-3">
+                    <input
+                      type="text"
+                      placeholder="HORALIX-XXXX-XXXX-XXXX-XXXX"
+                      value={licenseKey}
+                      onChange={(e) => setLicenseKey(e.target.value.toUpperCase())}
+                      className="flex-1 px-4 py-3 bg-black/50 border border-purple-500/30 rounded-lg text-white font-mono placeholder-gray-500 focus:outline-none focus:border-purple-500 transition"
+                      disabled={activatingLicense}
+                    />
+                    <button
+                      type="submit"
+                      disabled={activatingLicense}
+                      className="px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-semibold rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {activatingLicense ? 'Activating...' : 'Activate'}
+                    </button>
+                  </div>
+                </form>
+
+                <p className="text-sm text-gray-500 mt-3">
+                  License keys are sent to your email after purchase. Check your inbox and spam folder.
+                </p>
+              </div>
+
+              {/* My Licenses */}
+              <div className="pt-8 border-t border-purple-500/30">
+                <h2 className="text-2xl font-bold text-white mb-4">My Licenses</h2>
+                {loadingLicenses ? (
+                  <p className="text-gray-400">Loading...</p>
+                ) : myLicenses.length === 0 ? (
+                  <p className="text-gray-400">No licenses activated yet.</p>
+                ) : (
+                  <div className="space-y-3">
+                    {myLicenses.map((license) => (
+                      <div key={license.id} className="p-4 bg-black/30 rounded-lg border border-purple-500/20">
+                        <div className="flex justify-between items-start mb-2">
+                          <div>
+                            <p className="text-white font-semibold uppercase">{license.planId} Plan</p>
+                            <p className="text-sm text-gray-500 font-mono">{license.licenseKey}</p>
+                          </div>
+                          <span
+                            className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                              license.status === 'active'
+                                ? 'bg-green-500/20 text-green-400'
+                                : 'bg-gray-500/20 text-gray-400'
+                            }`}
+                          >
+                            {license.status.toUpperCase()}
+                          </span>
+                        </div>
+                        <div className="text-sm text-gray-500 space-y-1">
+                          {license.activatedAt && (
+                            <p>Activated: {new Date(license.activatedAt).toLocaleDateString()}</p>
+                          )}
+                          {license.expiresAt && (
+                            <p>Expires: {new Date(license.expiresAt).toLocaleDateString()}</p>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           )}
 
