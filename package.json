@@ -153,6 +153,7 @@
     "@radix-ui/react-slot": "^1.1.1",
     "@radix-ui/react-toast": "^1.2.2",
     "@radix-ui/react-tooltip": "^1.1.4",
+    "@simplewebauthn/browser": "^13.2.2",
     "axios": "^1.7.7",
     "better-sqlite3": "^11.8.1",
     "class-variance-authority": "^0.7.0",

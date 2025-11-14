@@ -218,6 +218,49 @@ export function runMigrations(): void {
     )
     console.log('Migration to version 1 completed!')
   }
+
+  // Migration 2: Add licenses table for revenue tracking
+  if (version < 2) {
+    console.log('Running migration to version 2: Adding licenses table...')
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS licenses (
+        id TEXT PRIMARY KEY,
+        licenseKey TEXT UNIQUE NOT NULL,
+        userId TEXT,
+        planId TEXT NOT NULL,
+        status TEXT NOT NULL DEFAULT 'active',
+        activatedAt INTEGER,
+        expiresAt INTEGER,
+        maxActivations INTEGER NOT NULL DEFAULT 1,
+        currentActivations INTEGER NOT NULL DEFAULT 0,
+        metadata TEXT,
+        createdAt INTEGER NOT NULL,
+        updatedAt INTEGER NOT NULL,
+        FOREIGN KEY (userId) REFERENCES users(id) ON DELETE SET NULL
+      )
+    `)
+
+    db.exec(`
+      CREATE INDEX IF NOT EXISTS idx_licenses_licenseKey
+      ON licenses(licenseKey);
+    `)
+
+    db.exec(`
+      CREATE INDEX IF NOT EXISTS idx_licenses_userId
+      ON licenses(userId);
+    `)
+
+    db.exec(`
+      CREATE INDEX IF NOT EXISTS idx_licenses_status
+      ON licenses(status);
+    `)
+
+    db.prepare('INSERT INTO schema_version (version, appliedAt) VALUES (?, ?)').run(
+      2,
+      Date.now()
+    )
+    console.log('Migration to version 2 completed!')
+  }
 }
 
 // ============================================================================
