@@ -180,16 +180,44 @@ export function runMigrations(): void {
 
   console.log(`Current schema version: ${version}`)
 
-  // Future migrations will go here
-  // Example:
-  // if (version < 1) {
-  //   console.log('Running migration to version 1...')
-  //   db.exec('ALTER TABLE users ADD COLUMN newField TEXT')
-  //   db.prepare('INSERT INTO schema_version (version, appliedAt) VALUES (?, ?)').run(
-  //     1,
-  //     Date.now()
-  //   )
-  // }
+  // Migration 1: Add knowledge_documents table
+  if (version < 1) {
+    console.log('Running migration to version 1: Adding knowledge_documents table...')
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS knowledge_documents (
+        id TEXT PRIMARY KEY,
+        userId TEXT NOT NULL,
+        filename TEXT NOT NULL,
+        originalFilename TEXT NOT NULL,
+        fileType TEXT NOT NULL,
+        fileSize INTEGER NOT NULL,
+        filePath TEXT NOT NULL,
+        extractedText TEXT,
+        metadata TEXT,
+        isProcessed INTEGER NOT NULL DEFAULT 0,
+        processingError TEXT,
+        createdAt INTEGER NOT NULL,
+        updatedAt INTEGER NOT NULL,
+        FOREIGN KEY (userId) REFERENCES users(id) ON DELETE CASCADE
+      )
+    `)
+
+    db.exec(`
+      CREATE INDEX IF NOT EXISTS idx_knowledge_documents_userId
+      ON knowledge_documents(userId);
+    `)
+
+    db.exec(`
+      CREATE INDEX IF NOT EXISTS idx_knowledge_documents_isProcessed
+      ON knowledge_documents(isProcessed);
+    `)
+
+    db.prepare('INSERT INTO schema_version (version, appliedAt) VALUES (?, ?)').run(
+      1,
+      Date.now()
+    )
+    console.log('Migration to version 1 completed!')
+  }
 }
 
 // ============================================================================

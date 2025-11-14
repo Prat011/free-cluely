@@ -74,6 +74,22 @@ export interface WebAuthnCredential {
   lastUsedAt: number | null // Unix timestamp
 }
 
+export interface KnowledgeDocument {
+  id: string
+  userId: string
+  filename: string // Sanitized filename for storage
+  originalFilename: string // Original uploaded filename
+  fileType: string // MIME type
+  fileSize: number // Size in bytes
+  filePath: string // Relative path to stored file
+  extractedText: string | null // Extracted text content
+  metadata: string | null // JSON metadata (page count, language, etc.)
+  isProcessed: number // 0 = pending, 1 = success
+  processingError: string | null // Error message if processing failed
+  createdAt: number // Unix timestamp
+  updatedAt: number // Unix timestamp
+}
+
 // ============================================================================
 // API REQUEST/RESPONSE TYPES
 // ============================================================================
