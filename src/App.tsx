@@ -4,6 +4,7 @@ import { ToastViewport } from "@radix-ui/react-toast"
 import { useEffect, useRef, useState } from "react"
 import Solutions from "./_pages/Solutions"
 import { QueryClient, QueryClientProvider } from "react-query"
+import { SubscriptionProvider } from "./contexts/SubscriptionContext"
 
 declare global {
   interface Window {
@@ -166,16 +167,18 @@ const App: React.FC = () => {
   return (
     <div ref={containerRef} className="min-h-0">
       <QueryClientProvider client={queryClient}>
-        <ToastProvider>
-          {view === "queue" ? (
-            <Queue setView={setView} />
-          ) : view === "solutions" ? (
-            <Solutions setView={setView} />
-          ) : (
-            <></>
-          )}
-          <ToastViewport />
-        </ToastProvider>
+        <SubscriptionProvider>
+          <ToastProvider>
+            {view === "queue" ? (
+              <Queue setView={setView} />
+            ) : view === "solutions" ? (
+              <Solutions setView={setView} />
+            ) : (
+              <></>
+            )}
+            <ToastViewport />
+          </ToastProvider>
+        </SubscriptionProvider>
       </QueryClientProvider>
     </div>
   )
