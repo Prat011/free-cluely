@@ -8,7 +8,7 @@
 import { ipcMain, BrowserWindow, desktopCapturer } from "electron"
 import { LlmEngine } from "../engines/llm/LlmEngine"
 import { SessionEngine } from "../engines/session/SessionEngine"
-import type { LlmRequestOptions, LlmResponseChunk } from "../engines/llm/types"
+import type { LlmRequestOptions, LlmResponseChunk, LlmProviderId } from "../engines/llm/types"
 import type {
   HaloSession,
   Message,
@@ -56,7 +56,12 @@ function setupLlmHandlers(): void {
    */
   ipcMain.on("llm:stream", async (event, options: LlmRequestOptions) => {
     try {
-      console.log("[IPC] Starting LLM stream:", options.provider, options.model)
+      // Validate input parameters
+      if (!options || !options.modelId || !options.messages) {
+        throw new Error("Invalid request: modelId and messages are required")
+      }
+
+      console.log("[IPC] Starting LLM stream for model:", options.modelId)
 
       const stream = llmEngine.stream(options)
 
@@ -79,31 +84,52 @@ function setupLlmHandlers(): void {
   /**
    * Cancel ongoing LLM request
    */
-  ipcMain.on("llm:cancel", () => {
-    // TODO: Implement cancellation
-    console.log("[IPC] LLM request cancelled")
+  ipcMain.on("llm:cancel", (_event, requestId?: string) => {
+    try {
+      if (requestId) {
+        llmEngine.cancelRequest(requestId)
+        console.log("[IPC] LLM request cancelled:", requestId)
+      } else {
+        llmEngine.cancelAllRequests()
+        console.log("[IPC] All LLM requests cancelled")
+      }
+    } catch (error: any) {
+      console.error("[IPC] Error cancelling request:", error)
+    }
   })
 
   /**
    * Get LLM metrics
    */
   ipcMain.handle("llm:getMetrics", async () => {
-    return llmEngine.getMetrics()
+    try {
+      return { success: true, metrics: llmEngine.getMetrics() }
+    } catch (error: any) {
+      return { success: false, error: error.message }
+    }
   })
 
   /**
    * Get LLM cost by provider
    */
   ipcMain.handle("llm:getCostByProvider", async () => {
-    return llmEngine.getCostByProvider()
+    try {
+      return { success: true, costs: llmEngine.getCostByProvider() }
+    } catch (error: any) {
+      return { success: false, error: error.message }
+    }
   })
 
   /**
    * Clear LLM cache
    */
   ipcMain.handle("llm:clearCache", async () => {
-    llmEngine.clearCache()
-    return { success: true }
+    try {
+      llmEngine.clearCache()
+      return { success: true }
+    } catch (error: any) {
+      return { success: false, error: error.message }
+    }
   })
 
   /**
@@ -111,9 +137,9 @@ function setupLlmHandlers(): void {
    */
   ipcMain.handle(
     "llm:testProvider",
-    async (event, providerId: string, config: any) => {
+    async (_event, providerId: string, _config: any) => {
       try {
-        const provider = llmEngine.getProvider(providerId)
+        const provider = llmEngine.getProvider(providerId as LlmProviderId)
         if (!provider) {
           throw new Error(`Provider ${providerId} not found`)
         }
@@ -134,7 +160,7 @@ function setupSessionHandlers(): void {
   /**
    * Create session
    */
-  ipcMain.handle("session:create", async (event, session: HaloSession) => {
+  ipcMain.handle("session:create", async (_event, session: HaloSession) => {
     try {
       sessionEngine.createSession(session)
       return { success: true, session }
@@ -146,7 +172,7 @@ function setupSessionHandlers(): void {
   /**
    * Get session
    */
-  ipcMain.handle("session:get", async (event, sessionId: string) => {
+  ipcMain.handle("session:get", async (_event, sessionId: string) => {
     try {
       const session = sessionEngine.getSession(sessionId)
       return { success: true, session }
@@ -160,7 +186,7 @@ function setupSessionHandlers(): void {
    */
   ipcMain.handle(
     "session:update",
-    async (event, sessionId: string, updates: Partial<HaloSession>) => {
+    async (_event, sessionId: string, updates: Partial<HaloSession>) => {
       try {
         sessionEngine.updateSession(sessionId, updates)
         return { success: true }
@@ -173,7 +199,7 @@ function setupSessionHandlers(): void {
   /**
    * Delete session
    */
-  ipcMain.handle("session:delete", async (event, sessionId: string) => {
+  ipcMain.handle("session:delete", async (_event, sessionId: string) => {
     try {
       sessionEngine.deleteSession(sessionId)
       return { success: true }
@@ -185,7 +211,7 @@ function setupSessionHandlers(): void {
   /**
    * Query sessions
    */
-  ipcMain.handle("session:query", async (event, query: any) => {
+  ipcMain.handle("session:query", async (_event, query: any) => {
     try {
       const sessions = sessionEngine.querySessions(query)
       return { success: true, sessions }
@@ -197,7 +223,7 @@ function setupSessionHandlers(): void {
   /**
    * Get recent sessions
    */
-  ipcMain.handle("session:getRecent", async (event, limit: number = 10) => {
+  ipcMain.handle("session:getRecent", async (_event, limit: number = 10) => {
     try {
       const sessions = sessionEngine.getRecentSessions(limit)
       return { success: true, sessions }
@@ -209,7 +235,7 @@ function setupSessionHandlers(): void {
   /**
    * Add message
    */
-  ipcMain.handle("session:addMessage", async (event, message: Message) => {
+  ipcMain.handle("session:addMessage", async (_event, message: Message) => {
     try {
       sessionEngine.addMessage(message)
       return { success: true }
@@ -223,7 +249,7 @@ function setupSessionHandlers(): void {
    */
   ipcMain.handle(
     "session:getMessages",
-    async (event, sessionId: string, limit?: number) => {
+    async (_event, sessionId: string, limit?: number) => {
       try {
         const messages = sessionEngine.getMessages(sessionId, limit)
         return { success: true, messages }
@@ -238,7 +264,7 @@ function setupSessionHandlers(): void {
    */
   ipcMain.handle(
     "session:searchMessages",
-    async (event, searchText: string, limit: number = 50) => {
+    async (_event, searchText: string, limit: number = 50) => {
       try {
         const messages = sessionEngine.searchMessages(searchText, limit)
         return { success: true, messages }
@@ -251,7 +277,7 @@ function setupSessionHandlers(): void {
   /**
    * Add context item
    */
-  ipcMain.handle("session:addContext", async (event, item: ContextItem) => {
+  ipcMain.handle("session:addContext", async (_event, item: ContextItem) => {
     try {
       sessionEngine.addContextItem(item)
       return { success: true }
@@ -263,7 +289,7 @@ function setupSessionHandlers(): void {
   /**
    * Get context items
    */
-  ipcMain.handle("session:getContext", async (event, sessionId: string) => {
+  ipcMain.handle("session:getContext", async (_event, sessionId: string) => {
     try {
       const items = sessionEngine.getContextItems(sessionId)
       return { success: true, items }
@@ -277,7 +303,7 @@ function setupSessionHandlers(): void {
    */
   ipcMain.handle(
     "session:updateContext",
-    async (event, itemId: string, updates: Partial<ContextItem>) => {
+    async (_event, itemId: string, updates: Partial<ContextItem>) => {
       try {
         sessionEngine.updateContextItem(itemId, updates)
         return { success: true }
@@ -290,7 +316,7 @@ function setupSessionHandlers(): void {
   /**
    * Delete context item
    */
-  ipcMain.handle("session:deleteContext", async (event, itemId: string) => {
+  ipcMain.handle("session:deleteContext", async (_event, itemId: string) => {
     try {
       sessionEngine.deleteContextItem(itemId)
       return { success: true }
@@ -304,7 +330,7 @@ function setupSessionHandlers(): void {
    */
   ipcMain.handle(
     "session:addTranscript",
-    async (event, segment: TranscriptSegment) => {
+    async (_event, segment: TranscriptSegment) => {
       try {
         sessionEngine.addTranscriptSegment(segment)
         return { success: true }
@@ -317,7 +343,7 @@ function setupSessionHandlers(): void {
   /**
    * Get transcript segments
    */
-  ipcMain.handle("session:getTranscripts", async (event, sessionId: string) => {
+  ipcMain.handle("session:getTranscripts", async (_event, sessionId: string) => {
     try {
       const segments = sessionEngine.getTranscriptSegments(sessionId)
       return { success: true, segments }
@@ -329,7 +355,7 @@ function setupSessionHandlers(): void {
   /**
    * Get session stats
    */
-  ipcMain.handle("session:getStats", async () => {
+  ipcMain.handle("session:getStats", async (_event) => {
     try {
       const stats = sessionEngine.getStats()
       return { success: true, stats }
@@ -347,7 +373,7 @@ function setupScreenshotHandlers(): void {
   /**
    * Capture screenshot
    */
-  ipcMain.handle("screenshot:capture", async (event, source?: string) => {
+  ipcMain.handle("screenshot:capture", async (_event, _source?: string) => {
     try {
       const sources = await desktopCapturer.getSources({
         types: ["screen"],
@@ -411,7 +437,7 @@ function setupSystemHandlers(): void {
   /**
    * Get app path
    */
-  ipcMain.handle("system:getPath", async (event, name: string) => {
+  ipcMain.handle("system:getPath", async (_event, name: string) => {
     const { app } = require("electron")
     return { success: true, path: app.getPath(name as any) }
   })

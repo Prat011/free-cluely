@@ -5,7 +5,7 @@
  * Designed for maximum extensibility and type safety.
  */
 
-import {
+import type {
   LlmProviderId,
   LlmModelConfig,
   LlmRequestOptions,
@@ -15,7 +15,22 @@ import {
   AnswerType,
   MeetingActionType,
   MeetingContext,
+  TokenUsage,
 } from "../../state/StateTypes"
+
+// Re-export for convenience
+export type {
+  LlmProviderId,
+  LlmModelConfig,
+  LlmRequestOptions,
+  LlmResponseChunk,
+  Message,
+  SessionMode,
+  AnswerType,
+  MeetingActionType,
+  MeetingContext,
+  TokenUsage,
+}
 
 // ============================================================================
 // PROVIDER INTERFACE

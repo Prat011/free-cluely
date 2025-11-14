@@ -29,7 +29,7 @@ export interface SessionQuery {
   searchText?: string
   limit?: number
   offset?: number
-  sortBy?: "createdAt" | "updatedAt" | "name"
+  sortBy?: "started_at" | "ended_at" | "name"
   sortOrder?: "asc" | "desc"
 }
 
@@ -75,16 +75,15 @@ export class SessionEngine {
         name TEXT NOT NULL,
         mode TEXT NOT NULL,
         status TEXT NOT NULL,
-        answer_type TEXT NOT NULL DEFAULT 'auto',
-        created_at INTEGER NOT NULL,
-        updated_at INTEGER NOT NULL,
+        started_at INTEGER NOT NULL,
         ended_at INTEGER,
+        paused_at INTEGER,
         metadata TEXT
       );
 
       CREATE INDEX IF NOT EXISTS idx_sessions_mode ON sessions(mode);
       CREATE INDEX IF NOT EXISTS idx_sessions_status ON sessions(status);
-      CREATE INDEX IF NOT EXISTS idx_sessions_created ON sessions(created_at DESC);
+      CREATE INDEX IF NOT EXISTS idx_sessions_started ON sessions(started_at DESC);
     `)
 
     // Messages table
@@ -110,12 +109,9 @@ export class SessionEngine {
         id TEXT PRIMARY KEY,
         session_id TEXT NOT NULL,
         type TEXT NOT NULL,
-        text TEXT,
-        image_data BLOB,
-        source_app TEXT,
         created_at INTEGER NOT NULL,
         pinned INTEGER DEFAULT 0,
-        metadata TEXT,
+        data TEXT NOT NULL,
         FOREIGN KEY (session_id) REFERENCES sessions(id) ON DELETE CASCADE
       );
 
@@ -129,13 +125,16 @@ export class SessionEngine {
       CREATE TABLE IF NOT EXISTS transcript_segments (
         id TEXT PRIMARY KEY,
         session_id TEXT NOT NULL,
-        speaker TEXT,
         text TEXT NOT NULL,
         start_time INTEGER NOT NULL,
-        end_time INTEGER,
+        end_time INTEGER NOT NULL,
+        speaker TEXT,
+        speaker_name TEXT,
         confidence REAL,
-        created_at INTEGER NOT NULL,
-        metadata TEXT,
+        source TEXT NOT NULL,
+        language TEXT,
+        is_final INTEGER NOT NULL DEFAULT 1,
+        words TEXT,
         FOREIGN KEY (session_id) REFERENCES sessions(id) ON DELETE CASCADE
       );
 
@@ -166,7 +165,7 @@ export class SessionEngine {
   createSession(session: HaloSession): void {
     const stmt = this.db.prepare(`
       INSERT INTO sessions (
-        id, name, mode, status, answer_type, created_at, updated_at, metadata
+        id, name, mode, status, started_at, ended_at, paused_at, metadata
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     `)
 
@@ -175,9 +174,9 @@ export class SessionEngine {
       session.name,
       session.mode,
       session.status,
-      session.answerType || "auto",
-      session.createdAt,
-      session.updatedAt,
+      session.startedAt,
+      session.endedAt || null,
+      session.pausedAt || null,
       session.metadata ? JSON.stringify(session.metadata) : null
     )
   }
@@ -216,21 +215,22 @@ export class SessionEngine {
       fields.push("status = ?")
       values.push(updates.status)
     }
-    if (updates.answerType !== undefined) {
-      fields.push("answer_type = ?")
-      values.push(updates.answerType)
-    }
     if (updates.endedAt !== undefined) {
       fields.push("ended_at = ?")
       values.push(updates.endedAt)
+    }
+    if (updates.pausedAt !== undefined) {
+      fields.push("paused_at = ?")
+      values.push(updates.pausedAt)
     }
     if (updates.metadata !== undefined) {
       fields.push("metadata = ?")
       values.push(JSON.stringify(updates.metadata))
     }
 
-    fields.push("updated_at = ?")
-    values.push(Date.now())
+    if (fields.length === 0) {
+      return // No updates to apply
+    }
 
     values.push(sessionId)
 
@@ -275,7 +275,7 @@ export class SessionEngine {
     }
 
     // Sorting
-    const sortBy = query.sortBy || "created_at"
+    const sortBy = query.sortBy || "started_at"
     const sortOrder = query.sortOrder || "desc"
     sql += ` ORDER BY ${sortBy} ${sortOrder}`
 
@@ -301,7 +301,7 @@ export class SessionEngine {
    */
   getRecentSessions(limit = 10): HaloSession[] {
     return this.querySessions({
-      sortBy: "updated_at",
+      sortBy: "started_at",
       sortOrder: "desc",
       limit,
     })
@@ -386,23 +386,18 @@ export class SessionEngine {
   addContextItem(item: ContextItem): void {
     const stmt = this.db.prepare(`
       INSERT INTO context_items (
-        id, session_id, type, text, image_data, source_app, created_at, pinned, metadata
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        id, session_id, type, created_at, pinned, data
+      ) VALUES (?, ?, ?, ?, ?, ?)
     `)
 
     stmt.run(
       item.id,
       item.sessionId,
       item.type,
-      item.text || null,
-      item.imageData || null,
-      item.sourceApp || null,
       item.createdAt,
       item.pinned ? 1 : 0,
-      item.metadata ? JSON.stringify(item.metadata) : null
+      JSON.stringify(item)
     )
-
-    this.updateSession(item.sessionId, {})
   }
 
   /**
@@ -462,23 +457,24 @@ export class SessionEngine {
   addTranscriptSegment(segment: TranscriptSegment): void {
     const stmt = this.db.prepare(`
       INSERT INTO transcript_segments (
-        id, session_id, speaker, text, start_time, end_time, confidence, created_at, metadata
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        id, session_id, text, start_time, end_time, speaker, speaker_name, confidence, source, language, is_final, words
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `)
 
     stmt.run(
       segment.id,
       segment.sessionId,
-      segment.speaker || null,
       segment.text,
       segment.startTime,
-      segment.endTime || null,
+      segment.endTime,
+      segment.speaker || null,
+      segment.speakerName || null,
       segment.confidence || null,
-      segment.createdAt,
-      segment.metadata ? JSON.stringify(segment.metadata) : null
+      segment.source,
+      segment.language || null,
+      segment.isFinal ? 1 : 0,
+      segment.words ? JSON.stringify(segment.words) : null
     )
-
-    this.updateSession(segment.sessionId, {})
   }
 
   /**
@@ -568,10 +564,12 @@ export class SessionEngine {
       name: row.name,
       mode: row.mode as SessionMode,
       status: row.status as SessionStatus,
-      answerType: row.answer_type,
-      createdAt: row.created_at,
-      updatedAt: row.updated_at,
+      startedAt: row.started_at,
       endedAt: row.ended_at || undefined,
+      pausedAt: row.paused_at || undefined,
+      contextItemIds: [],
+      transcriptSegmentIds: [],
+      messageIds: [],
       metadata: row.metadata ? JSON.parse(row.metadata) : undefined,
     }
   }
@@ -589,30 +587,23 @@ export class SessionEngine {
   }
 
   private rowToContextItem(row: any): ContextItem {
-    return {
-      id: row.id,
-      sessionId: row.session_id,
-      type: row.type,
-      text: row.text || undefined,
-      imageData: row.image_data || undefined,
-      sourceApp: row.source_app || undefined,
-      createdAt: row.created_at,
-      pinned: row.pinned === 1,
-      metadata: row.metadata ? JSON.parse(row.metadata) : undefined,
-    }
+    return JSON.parse(row.data) as ContextItem
   }
 
   private rowToTranscriptSegment(row: any): TranscriptSegment {
     return {
       id: row.id,
       sessionId: row.session_id,
-      speaker: row.speaker || undefined,
       text: row.text,
       startTime: row.start_time,
-      endTime: row.end_time || undefined,
+      endTime: row.end_time,
+      speaker: row.speaker || undefined,
+      speakerName: row.speaker_name || undefined,
       confidence: row.confidence || undefined,
-      createdAt: row.created_at,
-      metadata: row.metadata ? JSON.parse(row.metadata) : undefined,
+      source: row.source,
+      language: row.language || undefined,
+      isFinal: row.is_final === 1,
+      words: row.words ? JSON.parse(row.words) : undefined,
     }
   }
 }

@@ -336,40 +336,86 @@ export class LlmEngine extends EventEmitter {
   // ========================================================================
 
   async complete(options: LlmRequestOptions): Promise<EnrichedResponse> {
+    const startTime = Date.now()
     const chunks: LlmResponseChunk[] = []
 
-    for await (const chunk of this.stream(options)) {
-      chunks.push(chunk)
-    }
+    try {
+      for await (const chunk of this.stream(options)) {
+        chunks.push(chunk)
+      }
 
-    // Combine chunks
-    const finalChunk = chunks[chunks.length - 1]
-    const content = chunks
-      .filter((c) => c.type === "delta")
-      .map((c) => c.content)
-      .join("")
+      // Validate we got at least one chunk
+      if (chunks.length === 0) {
+        throw new LlmError(
+          "No response received from provider",
+          LlmErrorCode.UNKNOWN_ERROR,
+          this.getProviderIdFromModel(options.modelId),
+          true
+        )
+      }
 
-    return {
-      requestId: this.generateRequestId(),
-      providerId: this.getProviderIdFromModel(options.modelId),
-      modelId: options.modelId,
-      content: content || finalChunk.content,
-      reasoningContent: finalChunk.reasoningContent,
-      usage: finalChunk.usage || {
-        inputTokens: 0,
-        outputTokens: 0,
-        totalTokens: 0,
-      },
-      latencyMs: 0,
-      fromCache: false,
-      finishReason: finalChunk.finishReason || "stop",
-      timestamp: Date.now(),
+      // Combine chunks
+      const finalChunk = chunks[chunks.length - 1]
+      const content = chunks
+        .filter((c) => c.type === "delta")
+        .map((c) => c.content)
+        .join("")
+
+      return {
+        requestId: this.generateRequestId(),
+        providerId: this.getProviderIdFromModel(options.modelId),
+        modelId: options.modelId,
+        content: content || finalChunk.content || "",
+        reasoningContent: finalChunk.reasoningContent,
+        usage: {
+          inputTokens: finalChunk.usage?.inputTokens || 0,
+          outputTokens: finalChunk.usage?.outputTokens || 0,
+          totalTokens: finalChunk.usage?.totalTokens || 0,
+          cachedTokens: finalChunk.usage?.cachedTokens,
+          reasoningTokens: finalChunk.usage?.reasoningTokens,
+        },
+        latencyMs: Date.now() - startTime,
+        fromCache: false,
+        finishReason: finalChunk.finishReason || "stop",
+        timestamp: Date.now(),
+      }
+    } catch (error: any) {
+      // Re-throw LlmError as-is, wrap other errors
+      if (error instanceof LlmError) {
+        throw error
+      }
+      throw new LlmError(
+        error.message || "Unknown error during completion",
+        LlmErrorCode.UNKNOWN_ERROR,
+        this.getProviderIdFromModel(options.modelId),
+        true,
+        error
+      )
     }
   }
 
   async *stream(
     options: LlmRequestOptions
   ): AsyncIterable<LlmResponseChunk> {
+    // Validate input parameters
+    if (!options || !options.modelId) {
+      throw new LlmError(
+        "Invalid request: modelId is required",
+        LlmErrorCode.INVALID_REQUEST,
+        this.config.defaultProviderId,
+        false
+      )
+    }
+
+    if (!options.messages || options.messages.length === 0) {
+      throw new LlmError(
+        "Invalid request: messages array is required and cannot be empty",
+        LlmErrorCode.INVALID_REQUEST,
+        this.config.defaultProviderId,
+        false
+      )
+    }
+
     this.requestCount++
     const startTime = Date.now()
     const requestId = this.generateRequestId()
@@ -525,6 +571,10 @@ export class LlmEngine extends EventEmitter {
     }
   }
 
+  /**
+   * Execute request with automatic retry and fallback logic
+   * Implements exponential backoff for retryable errors
+   */
   private async *executeWithFallback(
     request: EnrichedRequest
   ): AsyncIterable<LlmResponseChunk> {
@@ -543,12 +593,19 @@ export class LlmEngine extends EventEmitter {
 
     for (let attempt = 0; attempt < maxAttempts; attempt++) {
       try {
-        // Execute request
-        const stream = provider.complete(request)
+        // Execute request - provider returns either AsyncIterable or Promise
+        const result = provider.complete(request)
 
         let contentAccumulator = ""
         let reasoningAccumulator = ""
         let finalUsage: any = null
+
+        // Convert Promise to AsyncIterable if needed
+        const stream: AsyncIterable<LlmResponseChunk> = Symbol.asyncIterator in result
+          ? (result as AsyncIterable<LlmResponseChunk>)
+          : (async function* () {
+              yield await (result as Promise<LlmResponseChunk>)
+            })()
 
         for await (const chunk of stream) {
           if (chunk.type === "delta") {
@@ -649,6 +706,21 @@ export class LlmEngine extends EventEmitter {
   // ========================================================================
 
   getMetrics(): LlmMetrics {
+    // Initialize provider usage with all provider IDs
+    const providerUsage: Record<LlmProviderId, number> = {
+      deepseek: 0,
+      openai: 0,
+      anthropic: 0,
+      google: 0,
+      ollama: 0,
+      custom: 0,
+    }
+
+    // Update with actual usage from providers
+    for (const [providerId] of this.providers.entries()) {
+      providerUsage[providerId] = 0 // TODO: Track actual usage per provider
+    }
+
     return {
       totalRequests: this.requestCount,
       successfulRequests: this.successCount,
@@ -658,13 +730,17 @@ export class LlmEngine extends EventEmitter {
       averageLatencyMs: 0, // TODO: Track latency
       cacheHitRate:
         this.cacheHits / (this.cacheHits + this.cacheMisses || 1),
-      providerUsage: {}, // TODO: Track provider usage
+      providerUsage,
       errorRate: this.errorCount / (this.requestCount || 1),
     }
   }
 
   getCostStats() {
     return this.costTracker.getStats()
+  }
+
+  getCostByProvider(): Record<LlmProviderId, number> {
+    return this.costTracker.getStats().costByProvider as Record<LlmProviderId, number>
   }
 
   getCacheStats() {
