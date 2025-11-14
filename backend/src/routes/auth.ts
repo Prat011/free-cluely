@@ -20,6 +20,13 @@ import {
   sendWelcomeEmail,
 } from "../services/email"
 import { GoogleCalendarService } from "../services/googleCalendar"
+import {
+  signupLimiter,
+  loginLimiter,
+  emailActionLimiter,
+  passwordResetLimiter,
+  authLimiter,
+} from "../middleware/rateLimiting"
 
 const router = express.Router()
 const googleCalendar = new GoogleCalendarService()
@@ -94,8 +101,9 @@ function sanitizeString(input: string, maxLength: number = 255): string {
  *
  * Body: { email: string, password: string }
  * Response: { success: true, userId: string, message: string }
+ * Rate limit: 5 requests per 15 minutes
  */
-router.post("/signup", async (req, res, next) => {
+router.post("/signup", signupLimiter, async (req, res, next) => {
   try {
     const { email: rawEmail, password } = req.body
 
@@ -140,8 +148,9 @@ router.post("/signup", async (req, res, next) => {
  *
  * Body: { email: string, password: string }
  * Response: { success: true, token: string, user: User }
+ * Rate limit: 10 requests per 15 minutes
  */
-router.post("/login", async (req, res, next) => {
+router.post("/login", loginLimiter, async (req, res, next) => {
   try {
     const { email: rawEmail, password } = req.body
 
@@ -234,8 +243,9 @@ router.get("/confirm-email/:token", async (req, res, next) => {
  *
  * Body: { email: string }
  * Response: { success: true, message: string }
+ * Rate limit: 3 requests per hour
  */
-router.post("/resend-confirmation", async (req, res, next) => {
+router.post("/resend-confirmation", emailActionLimiter, async (req, res, next) => {
   try {
     const { email: rawEmail } = req.body
 
@@ -288,8 +298,9 @@ router.post("/resend-confirmation", async (req, res, next) => {
  *
  * Body: { email: string }
  * Response: { success: true, message: string }
+ * Rate limit: 3 requests per hour
  */
-router.post("/forgot-password", async (req, res, next) => {
+router.post("/forgot-password", passwordResetLimiter, async (req, res, next) => {
   try {
     const { email: rawEmail } = req.body
 
@@ -334,8 +345,9 @@ router.post("/forgot-password", async (req, res, next) => {
  *
  * Body: { token: string, newPassword: string }
  * Response: { success: true, message: string }
+ * Rate limit: 3 requests per hour
  */
-router.post("/reset-password", async (req, res, next) => {
+router.post("/reset-password", passwordResetLimiter, async (req, res, next) => {
   try {
     const { token, newPassword } = req.body
 
@@ -424,8 +436,9 @@ router.post("/change-password", auth, async (req: AuthRequest, res, next) => {
  *
  * Query: { state?: string } - Optional state to pass through OAuth flow
  * Response: { success: true, authUrl: string }
+ * Rate limit: 10 requests per 15 minutes
  */
-router.get("/google", (req, res, next) => {
+router.get("/google", authLimiter, (req, res, next) => {
   try {
     // Use state parameter or generate a default one
     const state = (req.query.state as string) || `oauth_${Date.now()}`
@@ -448,8 +461,9 @@ router.get("/google", (req, res, next) => {
  *
  * Query: { code: string, state?: string }
  * Response: HTML page with auto-login or error message
+ * Rate limit: 10 requests per 15 minutes
  */
-router.get("/google/callback", async (req, res) => {
+router.get("/google/callback", authLimiter, async (req, res) => {
   try {
     const { code, state } = req.query
 

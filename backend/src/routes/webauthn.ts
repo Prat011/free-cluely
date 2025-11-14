@@ -20,6 +20,7 @@ import { auth, requireAuth, generateToken } from '../middleware/auth'
 import { AuthRequest } from '../types'
 import { UserModel } from '../models/User'
 import { WebAuthnCredentialModel } from '../models/WebAuthnCredential'
+import { webauthnRegisterLimiter, webauthnLoginLimiter } from '../middleware/rateLimiting'
 
 const router = express.Router()
 
@@ -44,8 +45,9 @@ const authenticationChallenges = new Map<string, string>()
  * POST /api/auth/webauthn/register-options
  * Generate registration options for WebAuthn credential
  * Requires authentication (user must be logged in)
+ * Rate limit: 5 requests per 15 minutes
  */
-router.post('/register-options', requireAuth, async (req: AuthRequest, res) => {
+router.post('/register-options', webauthnRegisterLimiter, requireAuth, async (req: AuthRequest, res) => {
   try {
     const userId = req.userId!
     const user = req.user!
@@ -98,8 +100,9 @@ router.post('/register-options', requireAuth, async (req: AuthRequest, res) => {
  * POST /api/auth/webauthn/register-verify
  * Verify and store WebAuthn credential
  * Requires authentication (user must be logged in)
+ * Rate limit: 5 requests per 15 minutes
  */
-router.post('/register-verify', requireAuth, async (req: AuthRequest, res) => {
+router.post('/register-verify', webauthnRegisterLimiter, requireAuth, async (req: AuthRequest, res) => {
   try {
     const userId = req.userId!
     const { credential, deviceName } = req.body as {
@@ -179,8 +182,9 @@ router.post('/register-verify', requireAuth, async (req: AuthRequest, res) => {
  * POST /api/auth/webauthn/login-options
  * Generate authentication options for WebAuthn login
  * No authentication required (this is the login endpoint)
+ * Rate limit: 15 requests per 15 minutes
  */
-router.post('/login-options', async (req, res) => {
+router.post('/login-options', webauthnLoginLimiter, async (req, res) => {
   try {
     const { email } = req.body
 
@@ -247,8 +251,9 @@ router.post('/login-options', async (req, res) => {
  * POST /api/auth/webauthn/login-verify
  * Verify WebAuthn authentication and issue JWT
  * No authentication required (this is the login endpoint)
+ * Rate limit: 15 requests per 15 minutes
  */
-router.post('/login-verify', async (req, res) => {
+router.post('/login-verify', webauthnLoginLimiter, async (req, res) => {
   try {
     const { userId, credential } = req.body as {
       userId: string
