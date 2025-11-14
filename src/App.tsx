@@ -1,12 +1,12 @@
 /**
- * Horalix Halo - Main Electron App
- *
- * Modern meeting assistant with authentication, calendar, and AI features
+ * Horalix Halo - Main Application
+ * 
+ * Modern, beautiful meeting assistant with cutting-edge features
  */
 
 import React from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
-import { QueryClient, QueryClientProvider } from 'react-query'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { AuthProvider } from './contexts/AuthContext'
 import { SubscriptionProvider } from './contexts/SubscriptionContext'
 import { ToastProvider } from './components/ui/toast'
@@ -27,12 +27,14 @@ import { MeetingPage } from './components/meeting/MeetingPage'
 import { CalendarPage } from './components/calendar/CalendarPage'
 import { PricingPage } from './components/subscription/PricingPage'
 
+// Create query client with optimized settings
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       staleTime: 5 * 60 * 1000, // 5 minutes
-      cacheTime: 10 * 60 * 1000, // 10 minutes
+      gcTime: 10 * 60 * 1000, // 10 minutes (formerly cacheTime)
       refetchOnWindowFocus: false,
+      retry: 1,
     },
   },
 })
@@ -44,7 +46,7 @@ function App() {
         <AuthProvider>
           <SubscriptionProvider>
             <ToastProvider>
-              <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900">
+              <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900 antialiased">
                 <Routes>
                   {/* Auth Routes */}
                   <Route path="/login" element={<LoginPage />} />
