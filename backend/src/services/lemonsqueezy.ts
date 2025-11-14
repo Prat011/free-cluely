@@ -256,8 +256,8 @@ async function handleSubscriptionCreated(
     planId,
     status: mapLemonSqueezyStatus(data.status),
     billingInterval,
-    renewAt: data.renews_at ? new Date(data.renews_at).getTime() : null,
-    cancelAt: data.ends_at ? new Date(data.ends_at).getTime() : null,
+    renewAt: data.renews_at ? new Date(data.renews_at).getTime() : undefined,
+    cancelAt: data.ends_at ? new Date(data.ends_at).getTime() : undefined,
   })
 
   // Update user's current plan
@@ -287,8 +287,8 @@ async function handleSubscriptionUpdated(
   // Update subscription
   SubscriptionModel.update(subscription.id, {
     status: mapLemonSqueezyStatus(data.status),
-    renewAt: data.renews_at ? new Date(data.renews_at).getTime() : null,
-    cancelAt: data.ends_at ? new Date(data.ends_at).getTime() : null,
+    renewAt: data.renews_at ? new Date(data.renews_at).getTime() : undefined,
+    cancelAt: data.ends_at ? new Date(data.ends_at).getTime() : undefined,
   })
 
   console.log(`Subscription updated: ${subscription.id}`)
@@ -335,7 +335,7 @@ async function handleSubscriptionResumed(
   // Update subscription status
   SubscriptionModel.update(subscription.id, {
     status: 'active',
-    cancelAt: null,
+    cancelAt: undefined,
   })
 
   // Update user's plan
@@ -420,7 +420,7 @@ async function handlePaymentSuccess(
 
   // Update renewal date
   SubscriptionModel.update(subscription.id, {
-    renewAt: data.renews_at ? new Date(data.renews_at).getTime() : null,
+    renewAt: data.renews_at ? new Date(data.renews_at).getTime() : undefined,
   })
 
   console.log(`Payment succeeded for subscription: ${subscription.id}`)

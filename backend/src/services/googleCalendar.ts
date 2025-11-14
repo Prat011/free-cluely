@@ -159,12 +159,12 @@ export class GoogleCalendarService {
       return {
         id: event.id || `event_${Date.now()}`,
         summary: event.summary || "Untitled Meeting",
-        description: event.description,
+        description: event.description || undefined,
         startTime,
         endTime,
         attendees,
-        location: event.location,
-        meetingLink: event.hangoutLink || extractMeetingLink(event.description),
+        location: event.location || undefined,
+        meetingLink: event.hangoutLink || extractMeetingLink(event.description || undefined),
       }
     })
   }
@@ -206,12 +206,12 @@ export class GoogleCalendarService {
       return {
         id: event.id || `event_${Date.now()}`,
         summary: event.summary || "Untitled Meeting",
-        description: event.description,
+        description: event.description || undefined,
         startTime,
         endTime,
         attendees,
-        location: event.location,
-        meetingLink: event.hangoutLink || extractMeetingLink(event.description),
+        location: event.location || undefined,
+        meetingLink: event.hangoutLink || extractMeetingLink(event.description || undefined),
       }
     } catch (error) {
       console.error("[GoogleCalendar] Failed to get event:", error)

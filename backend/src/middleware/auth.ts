@@ -5,7 +5,7 @@
  */
 
 import { Response, NextFunction } from 'express'
-import jwt from 'jsonwebtoken'
+import jwt, { SignOptions } from 'jsonwebtoken'
 import { AuthRequest, AuthenticationError } from '../types'
 import UserModel from '../models/User'
 
@@ -29,7 +29,8 @@ if (!process.env.JWT_SECRET) {
  * Generate JWT token for a user
  */
 export function generateToken(userId: string, expiresIn: string = '30d'): string {
-  return jwt.sign({ userId }, JWT_SECRET, { expiresIn })
+  const options: SignOptions = { expiresIn: expiresIn as any }
+  return jwt.sign({ userId }, JWT_SECRET, options)
 }
 
 /**
@@ -145,3 +146,6 @@ export function createUserAndToken(email: string): { user: any; token: string } 
 export function decodeToken(token: string): any {
   return jwt.decode(token)
 }
+
+// Export alias for convenience
+export { requireAuth as auth }

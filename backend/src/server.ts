@@ -16,6 +16,7 @@ dotenv.config({ path: path.join(__dirname, '../../.env') })
 import { initializeDatabase, runMigrations } from './database/schema'
 
 // Import routes
+import authRoutes from './routes/auth'
 import subscriptionRoutes from './routes/subscription'
 import meetingsRoutes from './routes/meetings'
 import webhooksRoutes from './routes/webhooks'
@@ -88,6 +89,7 @@ app.get('/health', (req: Request, res: Response) => {
 // API ROUTES
 // ============================================================================
 
+app.use('/api/auth', authRoutes)
 app.use('/api/subscription', subscriptionRoutes)
 app.use('/api/meetings', meetingsRoutes)
 app.use('/api/webhooks', webhooksRoutes)

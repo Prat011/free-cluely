@@ -22,7 +22,7 @@ if (!fs.existsSync(dbDir)) {
 }
 
 // Initialize database connection
-export const db = new Database(DATABASE_PATH, {
+export const db: Database.Database = new Database(DATABASE_PATH, {
   verbose: process.env.NODE_ENV === 'development' ? console.log : undefined,
 })
 

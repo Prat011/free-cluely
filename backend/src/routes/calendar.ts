@@ -6,6 +6,7 @@
 
 import express from "express"
 import { auth } from "../middleware/auth"
+import { AuthRequest } from "../types"
 import { GoogleCalendarService, generateMeetingContext } from "../services/googleCalendar"
 import { CalendarConnectionModel } from "../models/CalendarConnection"
 
@@ -20,9 +21,9 @@ const googleCalendar = new GoogleCalendarService()
  * GET /api/calendar/google/connect
  * Get OAuth2 authorization URL for Google Calendar
  */
-router.get("/google/connect", auth, (req, res) => {
+router.get("/google/connect", auth, (req: AuthRequest, res) => {
   try {
-    const userId = req.user!.userId
+    const userId = req.userId!
     const authUrl = googleCalendar.getAuthUrl(userId)
 
     res.json({
@@ -100,9 +101,9 @@ router.get("/google/callback", async (req, res) => {
  * GET /api/calendar/events
  * Get upcoming calendar events
  */
-router.get("/events", auth, async (req, res) => {
+router.get("/events", auth, async (req: AuthRequest, res) => {
   try {
-    const userId = req.user!.userId
+    const userId = req.userId!
     const { provider = "google", maxResults = "10" } = req.query
 
     // Get calendar connection
@@ -155,9 +156,9 @@ router.get("/events", auth, async (req, res) => {
  * GET /api/calendar/event/:eventId
  * Get single calendar event with full context
  */
-router.get("/event/:eventId", auth, async (req, res) => {
+router.get("/event/:eventId", auth, async (req: AuthRequest, res) => {
   try {
-    const userId = req.user!.userId
+    const userId = req.userId!
     const { eventId } = req.params
     const { provider = "google" } = req.query
 
@@ -219,9 +220,9 @@ router.get("/event/:eventId", auth, async (req, res) => {
  * GET /api/calendar/connections
  * Get all connected calendars for user
  */
-router.get("/connections", auth, (req, res) => {
+router.get("/connections", auth, (req: AuthRequest, res) => {
   try {
-    const userId = req.user!.userId
+    const userId = req.userId!
     const connections = CalendarConnectionModel.findByUserId(userId)
 
     // Don't expose tokens
@@ -250,9 +251,9 @@ router.get("/connections", auth, (req, res) => {
  * DELETE /api/calendar/connection/:provider
  * Disconnect a calendar
  */
-router.delete("/connection/:provider", auth, (req, res) => {
+router.delete("/connection/:provider", auth, (req: AuthRequest, res) => {
   try {
-    const userId = req.user!.userId
+    const userId = req.userId!
     const { provider } = req.params
 
     const connection = CalendarConnectionModel.findByUserAndProvider(
