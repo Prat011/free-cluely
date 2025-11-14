@@ -10,7 +10,10 @@
     "start:prod": "NODE_ENV=production node dist/server.js",
     "typecheck": "tsc --noEmit",
     "clean": "rimraf dist",
-    "db:reset": "ts-node scripts/resetDb.ts"
+    "db:reset": "ts-node scripts/resetDb.ts",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage"
   },
   "keywords": [
     "horalix",
@@ -23,20 +26,30 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@simplewebauthn/server": "^10.0.0",
+    "bcrypt": "^5.1.1",
     "better-sqlite3": "^11.8.1",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
     "express": "^4.18.2",
     "googleapis": "^140.0.0",
-    "jsonwebtoken": "^9.0.2"
+    "jsonwebtoken": "^9.0.2",
+    "nodemailer": "^6.9.15",
+    "uuid": "^11.0.3"
   },
   "devDependencies": {
+    "@simplewebauthn/types": "^10.0.0",
+    "@types/bcrypt": "^5.0.2",
     "@types/better-sqlite3": "^7.6.12",
     "@types/cors": "^2.8.17",
     "@types/express": "^4.17.21",
     "@types/jsonwebtoken": "^9.0.5",
     "@types/node": "^22.9.0",
+    "@types/nodemailer": "^6.4.16",
+    "@types/uuid": "^10.0.0",
+    "jest": "^29.7.0",
     "rimraf": "^6.0.1",
+    "ts-jest": "^29.2.5",
     "ts-node": "^10.9.2",
     "ts-node-dev": "^2.0.0",
     "typescript": "^5.6.3"

@@ -18,6 +18,12 @@ export function initializeDatabase(): void {
     CREATE TABLE IF NOT EXISTS users (
       id TEXT PRIMARY KEY,
       email TEXT UNIQUE NOT NULL,
+      passwordHash TEXT,
+      isEmailConfirmed INTEGER NOT NULL DEFAULT 0,
+      emailConfirmToken TEXT,
+      emailConfirmTokenExpires INTEGER,
+      googleId TEXT UNIQUE,
+      appleId TEXT UNIQUE,
       currentPlan TEXT NOT NULL DEFAULT 'free',
       billingCustomerId TEXT,
       lastFreeTrialStartedAt INTEGER,
@@ -84,6 +90,22 @@ export function initializeDatabase(): void {
       expiresAt INTEGER NOT NULL,
       createdAt INTEGER NOT NULL,
       updatedAt INTEGER NOT NULL,
+      FOREIGN KEY (userId) REFERENCES users(id) ON DELETE CASCADE
+    )
+  `)
+
+  // Create WebAuthn Credentials table
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS webauthn_credentials (
+      id TEXT PRIMARY KEY,
+      userId TEXT NOT NULL,
+      credentialId TEXT UNIQUE NOT NULL,
+      publicKey TEXT NOT NULL,
+      counter INTEGER NOT NULL DEFAULT 0,
+      transports TEXT,
+      deviceName TEXT,
+      createdAt INTEGER NOT NULL,
+      lastUsedAt INTEGER,
       FOREIGN KEY (userId) REFERENCES users(id) ON DELETE CASCADE
     )
   `)
