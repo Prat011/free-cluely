@@ -2,7 +2,7 @@
   "name": "horalix-halo",
   "version": "0.1.0",
   "description": "",
-  "main": "./dist-electron/main.js",
+  "main": "./dist-electron/horalix-main.js",
   "scripts": {
     "clean": "rimraf dist dist-electron",
     "dev": "vite",
