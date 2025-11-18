@@ -206,7 +206,7 @@ const Queue: React.FC<QueueProps> = ({ setView }) => {
   const handleModelChange = (provider: "ollama" | "gemini", model: string) => {
     setCurrentModel({ provider, model })
     // Update chat messages to reflect the model change
-    const modelName = provider === "ollama" ? model : "Gemini 2.0 Flash"
+    const modelName = provider === "ollama" ? model : "Gemini 3 Pro"
     setChatMessages((msgs) => [...msgs, { 
       role: "gemini", 
       text: `🔄 Switched to ${provider === "ollama" ? "🏠" : "☁️"} ${modelName}. Ready for your questions!` 
