@@ -74,6 +74,7 @@ export class ProcessingHelper {
       this.currentProcessingAbortController = new AbortController()
       try {
         const imageResult = await this.llmHelper.analyzeImageFile(lastPath);
+        let imageResultText: string;
         const problemInfo = {
           problem_statement: imageResult.text,
           input_format: { description: "Generated from screenshot", parameters: [] as any[] },
