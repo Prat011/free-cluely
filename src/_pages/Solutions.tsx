@@ -3,6 +3,7 @@ import React, { useState, useEffect, useRef } from "react"
 import { useQuery, useQueryClient } from "react-query"
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter"
 import { dracula } from "react-syntax-highlighter/dist/esm/styles/prism"
+import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism'
 
 import ScreenshotQueue from "../components/Queue/ScreenshotQueue"
 import {
@@ -18,6 +19,106 @@ import SolutionCommands from "../components/Solutions/SolutionCommands"
 import Debug from "./Debug"
 
 // (Using global ElectronAPI type from src/types/electron.d.ts)
+
+// Function to format text with markdown support
+const formatText = (text: string) => {
+  const parts: (string | JSX.Element)[] = []
+  let lastIndex = 0
+
+  // Handle code blocks first (```code```)
+  const codeBlockRegex = /```(\w+)?\n?([\s\S]*?)```/g
+  let match
+  while ((match = codeBlockRegex.exec(text)) !== null) {
+    // Add text before the code block
+    if (match.index > lastIndex) {
+      parts.push(formatInlineMarkdown(text.slice(lastIndex, match.index)))
+    }
+
+    // Add the code block
+    const language = match[1] || 'text'
+    const code = match[2].trim()
+    parts.push(
+      <div key={`code-${match.index}`} className="my-2 rounded-md overflow-hidden">
+        <SyntaxHighlighter
+          language={language}
+          style={oneDark}
+          customStyle={{
+            margin: 0,
+            padding: '12px',
+            fontSize: '11px',
+            background: '#1e1e1e'
+          }}
+        >
+          {code}
+        </SyntaxHighlighter>
+      </div>
+    )
+
+    lastIndex = match.index + match[0].length
+  }
+
+  // Add remaining text
+  if (lastIndex < text.length) {
+    parts.push(formatInlineMarkdown(text.slice(lastIndex)))
+  }
+
+  return parts
+}
+
+// Function to format inline markdown (bold, italic, code, links)
+const formatInlineMarkdown = (text: string) => {
+  const parts: (string | JSX.Element)[] = []
+  let lastIndex = 0
+
+  // Handle inline code first
+  const inlineCodeRegex = /`([^`]+)`/g
+  let match
+  while ((match = inlineCodeRegex.exec(text)) !== null) {
+    // Add text before the code
+    if (match.index > lastIndex) {
+      parts.push(formatSimpleMarkdown(text.slice(lastIndex, match.index)))
+    }
+
+    // Add the inline code
+    parts.push(
+      <code key={`inline-${match.index}`} className="bg-gray-800 px-1 py-0.5 rounded text-xs font-mono">
+        {match[1]}
+      </code>
+    )
+
+    lastIndex = match.index + match[0].length
+  }
+
+  // Add remaining text
+  if (lastIndex < text.length) {
+    parts.push(formatSimpleMarkdown(text.slice(lastIndex)))
+  }
+
+  return parts.length > 0 ? <>{parts}</> : text
+}
+
+// Function to format simple markdown (bold, italic, links)
+const formatSimpleMarkdown = (text: string) => {
+  // Handle line breaks
+  const lines = text.split('\n')
+  const formattedLines: (string | JSX.Element)[] = []
+
+  lines.forEach((line, index) => {
+    // Handle bold (**text**)
+    line = line.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    // Handle italic (*text*)
+    line = line.replace(/\*(.*?)\*/g, '<em>$1</em>')
+    // Handle links [text](url)
+    line = line.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer" class="text-blue-400 underline hover:text-blue-300">$1</a>')
+
+    if (index > 0) {
+      formattedLines.push(<br key={`br-${index}`} />)
+    }
+    formattedLines.push(<span key={`line-${index}`} dangerouslySetInnerHTML={{ __html: line }} />)
+  })
+
+  return <>{formattedLines}</>
+}
 
 export const ContentSection = ({
   title,
@@ -40,7 +141,9 @@ export const ContentSection = ({
       </div>
     ) : (
       <div className="text-[13px] leading-[1.4] text-gray-100 max-w-[600px]">
-        {content}
+        {typeof content === 'string' && title === 'Audio Result'
+          ? formatText(content)
+          : content}
       </div>
     )}
   </div>

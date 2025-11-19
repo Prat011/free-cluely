@@ -67,6 +67,30 @@ npm run dist
 ```
 The built app will be in the `release` folder.
 
+#### Method 3: Global CLI Command
+
+1. open `package.json` and add :
+   ```
+   "bin": {
+    "start-cluely": "./start.sh"
+     }
+   ```
+2. create a new file start.sh in the root dir, add this in the file 
+   ```
+   cd "/home/user/Folder/free-cluely"
+   npm start
+   ```
+3. In the terminal, go to folder dir(root) and type :
+   ```
+   chmod +x start.sh
+   npm link
+   ```
+4. Done! now you can be in any dir in the terminal, you can just type
+   ```
+   start-cluely
+   ```
+   to run this application
+   
 ## 🤖 AI Provider Options
 
 ### Ollama (Recommended for Privacy)

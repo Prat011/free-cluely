@@ -59,6 +59,18 @@ export function initializeIpcHandlers(appState: AppState): void {
     appState.toggleMainWindow()
   })
 
+  ipcMain.handle("show-window", async () => {
+    appState.showMainWindow()
+  })
+
+  ipcMain.handle("hide-window", async () => {
+    appState.hideMainWindow()
+  })
+
+  ipcMain.handle("process-screenshots", async () => {
+    await appState.processingHelper.processScreenshots()
+  })
+
   ipcMain.handle("reset-queues", async () => {
     try {
       appState.clearQueues()
@@ -67,6 +79,27 @@ export function initializeIpcHandlers(appState: AppState): void {
     } catch (error: any) {
       console.error("Error resetting queues:", error)
       return { success: false, error: error.message }
+    }
+  })
+
+  ipcMain.handle("reset-view", async () => {
+    console.log("Reset view requested. Canceling requests and resetting queues...")
+
+    // Cancel ongoing API requests
+    appState.processingHelper.cancelOngoingRequests()
+
+    // Clear both screenshot queues
+    appState.clearQueues()
+
+    console.log("Cleared queues.")
+
+    // Update the view state to 'queue'
+    appState.setView("queue")
+
+    // Notify renderer process to switch view to 'queue'
+    const mainWindow = appState.getMainWindow()
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send("reset-view")
     }
   })
 
