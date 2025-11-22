@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useRef } from "react"
+import ReactMarkdown from "react-markdown"
+import remarkGfm from "remark-gfm"
 import { IoLogOutOutline } from "react-icons/io5"
 import { Dialog, DialogContent, DialogClose } from "../ui/dialog"
 
@@ -247,7 +249,12 @@ const QueueCommands: React.FC<QueueCommandsProps> = ({
       {/* Audio Result Display */}
       {audioResult && (
         <div className="mt-2 p-2 bg-white/10 rounded text-white text-xs max-w-md">
-          <span className="font-semibold">Audio Result:</span> {audioResult}
+          <span className="font-semibold">Audio Result:</span> 
+          <div className="markdown-content mt-1">
+            <ReactMarkdown remarkPlugins={[remarkGfm]}>
+              {audioResult}
+            </ReactMarkdown>
+          </div>
         </div>
       )}
       {/* Chat Dialog Overlay */}
