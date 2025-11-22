@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useRef } from "react"
+import ReactMarkdown from "react-markdown"
+import remarkGfm from "remark-gfm"
 import { useQuery } from "react-query"
 import ScreenshotQueue from "../components/Queue/ScreenshotQueue"
 import {
@@ -276,7 +278,11 @@ const Queue: React.FC<QueueProps> = ({ setView }) => {
                       }`}
                       style={{ wordBreak: "break-word", lineHeight: "1.4" }}
                     >
-                      {msg.text}
+                      <div className="markdown-content">
+                        <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                          {msg.text}
+                        </ReactMarkdown>
+                      </div>
                     </div>
                   </div>
                 ))
