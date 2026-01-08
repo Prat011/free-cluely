@@ -7,7 +7,7 @@ A desktop application to help you cheat on everything.
 ### Prerequisites
 - Make sure you have Node.js installed on your computer
 - Git installed on your computer
-- A Gemini API key (get it from [Google AI Studio](https://makersuite.google.com/app/apikey))
+ - A GROQ API key (or provider API key)
 
 ### Installation Steps
 
@@ -24,9 +24,9 @@ npm install
 
 3. Set up environment variables:
    - Create a file named `.env` in the root folder
-   - Add your Gemini API key:
+   - Add your GROQ API key:
    ```
-   GEMINI_API_KEY=your_api_key_here
+   GROQ_API_KEY=your_api_key_here
    ```
    - Save the file
 

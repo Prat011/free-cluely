@@ -7,7 +7,8 @@ export class LLMHelper {
 
   constructor(apiKey: string) {
     const genAI = new GoogleGenerativeAI(apiKey)
-    this.model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" })
+    const modelName = process.env.GENERATIVE_MODEL || "default"
+    this.model = genAI.getGenerativeModel({ model: modelName })
   }
 
   private async fileToGenerativePart(imagePath: string) {
@@ -60,10 +61,10 @@ export class LLMHelper {
   }
 }\nImportant: Return ONLY the JSON object, without any markdown formatting or code blocks.`
 
-    console.log("[LLMHelper] Calling Gemini LLM for solution...");
+    console.log("[LLMHelper] Calling generative LLM for solution...");
     try {
       const result = await this.model.generateContent(prompt)
-      console.log("[LLMHelper] Gemini LLM returned result.");
+      console.log("[LLMHelper] LLM returned result.");
       const response = await result.response
       const text = this.cleanJsonResponse(response.text())
       const parsed = JSON.parse(text)
@@ -160,13 +161,13 @@ export class LLMHelper {
     }
   }
 
-  public async chatWithGemini(message: string): Promise<string> {
+  public async chatWithProvider(message: string): Promise<string> {
     try {
       const result = await this.model.generateContent(message);
       const response = await result.response;
       return response.text();
     } catch (error) {
-      console.error("[LLMHelper] Error in chatWithGemini:", error);
+      console.error("[LLMHelper] Error in chatWithProvider:", error);
       throw error;
     }
   }

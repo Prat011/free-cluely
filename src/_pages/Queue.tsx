@@ -27,7 +27,7 @@ const Queue: React.FC<QueueProps> = ({ setView }) => {
   const contentRef = useRef<HTMLDivElement>(null)
 
   const [chatInput, setChatInput] = useState("")
-  const [chatMessages, setChatMessages] = useState<{role: "user"|"gemini", text: string}[]>([])
+  const [chatMessages, setChatMessages] = useState<{role: "user"|"groq", text: string}[]>([])
   const [chatLoading, setChatLoading] = useState(false)
   const [isChatOpen, setIsChatOpen] = useState(false)
   const chatInputRef = useRef<HTMLInputElement>(null)
@@ -88,10 +88,10 @@ const Queue: React.FC<QueueProps> = ({ setView }) => {
     setChatLoading(true)
     setChatInput("")
     try {
-      const response = await window.electronAPI.invoke("gemini-chat", chatInput)
-      setChatMessages((msgs) => [...msgs, { role: "gemini", text: response }])
+      const response = await window.electronAPI.invoke("groq-chat", chatInput)
+      setChatMessages((msgs) => [...msgs, { role: "groq", text: response }])
     } catch (err) {
-      setChatMessages((msgs) => [...msgs, { role: "gemini", text: "Error: " + String(err) }])
+      setChatMessages((msgs) => [...msgs, { role: "groq", text: "Error: " + String(err) }])
     } finally {
       setChatLoading(false)
       chatInputRef.current?.focus()
@@ -154,16 +154,16 @@ const Queue: React.FC<QueueProps> = ({ setView }) => {
       await refetch();
       // Show loading in chat
       setChatLoading(true);
-      try {
+        try {
         // Get the latest screenshot path
         const latest = data?.path || (Array.isArray(data) && data.length > 0 && data[data.length - 1]?.path);
         if (latest) {
           // Call the LLM to process the screenshot
           const response = await window.electronAPI.invoke("analyze-image-file", latest);
-          setChatMessages((msgs) => [...msgs, { role: "gemini", text: response.text }]);
+          setChatMessages((msgs) => [...msgs, { role: "groq", text: response.text }]);
         }
       } catch (err) {
-        setChatMessages((msgs) => [...msgs, { role: "gemini", text: "Error: " + String(err) }]);
+        setChatMessages((msgs) => [...msgs, { role: "groq", text: "Error: " + String(err) }]);
       } finally {
         setChatLoading(false);
       }
@@ -217,7 +217,7 @@ const Queue: React.FC<QueueProps> = ({ setView }) => {
             <div className="flex-1 overflow-y-auto mb-3 p-3 rounded-lg bg-white/10 backdrop-blur-md max-h-64 min-h-[120px] glass-content border border-white/20 shadow-lg">
               {chatMessages.length === 0 ? (
                 <div className="text-sm text-gray-600 text-center mt-8">
-                  💬 Chat with Gemini 2.5 Flash
+                  💬 Chat with GROQ
                   <br />
                   <span className="text-xs text-gray-500">Take a screenshot (Cmd+H) for automatic analysis</span>
                 </div>
@@ -247,7 +247,7 @@ const Queue: React.FC<QueueProps> = ({ setView }) => {
                       <span className="animate-pulse text-gray-400">●</span>
                       <span className="animate-pulse animation-delay-200 text-gray-400">●</span>
                       <span className="animate-pulse animation-delay-400 text-gray-400">●</span>
-                      <span className="ml-2">Gemini is thinking...</span>
+                      <span className="ml-2">GROQ is thinking...</span>
                     </span>
                   </div>
                 </div>

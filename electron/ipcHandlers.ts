@@ -103,12 +103,12 @@ export function initializeIpcHandlers(appState: AppState): void {
     }
   })
 
-  ipcMain.handle("gemini-chat", async (event, message: string) => {
+  ipcMain.handle("groq-chat", async (event, message: string) => {
     try {
-      const result = await appState.processingHelper.getLLMHelper().chatWithGemini(message);
+      const result = await appState.processingHelper.getLLMHelper().chatWithProvider(message);
       return result;
     } catch (error: any) {
-      console.error("Error in gemini-chat handler:", error);
+      console.error("Error in groq-chat handler:", error);
       throw error;
     }
   });

@@ -18,9 +18,9 @@ export class ProcessingHelper {
 
   constructor(appState: AppState) {
     this.appState = appState
-    const apiKey = process.env.GEMINI_API_KEY
-    if (!apiKey) {
-      throw new Error("GEMINI_API_KEY not found in environment variables")
+    const apiKey = process.env.GROQ_API_KEY
+    if (!apiKey){ 
+      throw new Error("GROQ_API_KEY not found in environment variables")
     }
     this.llmHelper = new LLMHelper(apiKey)
   }

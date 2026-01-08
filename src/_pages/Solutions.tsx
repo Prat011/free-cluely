@@ -269,9 +269,9 @@ const Solutions: React.FC<SolutionsProps> = ({ setView }) => {
             setAudioRecording(false)
             const blob = new Blob(chunks, { type: chunks[0]?.type || 'audio/webm' })
             const reader = new FileReader()
-            reader.onloadend = async () => {
+              reader.onloadend = async () => {
               const base64Data = (reader.result as string).split(',')[1]
-              // Send audio to Gemini for analysis
+              // Send audio to GROQ for analysis
               try {
                 const result = await window.electronAPI.analyzeAudioFromBase64(
                   base64Data,
