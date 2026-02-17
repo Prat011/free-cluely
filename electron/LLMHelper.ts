@@ -1,7 +1,6 @@
 // electron/LLMHelper.ts
 import { GoogleGenerativeAI, GenerativeModel } from "@google/generative-ai"
 import fs from "fs"
-import os from "os"
 import { TranscriptionHelper } from "./TranscriptionHelper"
 
 interface OllamaResponse {
@@ -22,7 +21,7 @@ export class LLMHelper {
     
     if (useOllama) {
       this.ollamaUrl = ollamaUrl || "http://localhost:11434"
-      this.ollamaModel = ollamaModel || "gemma3:12b"
+      this.ollamaModel = ollamaModel || "gemma:latest" // Default fallback
       console.log(`[LLMHelper] Using Ollama with model: ${this.ollamaModel}`)
       
       // Auto-detect and use first available model if specified model doesn't exist
@@ -56,17 +55,6 @@ export class LLMHelper {
   }
 
   private async callOllama(prompt: string): Promise<string> {
-    return this.callOllamaWithOptions(prompt)
-  }
-
-  private getOllamaThreadCount(): number {
-    return Math.max(1, Math.min(6, os.cpus().length))
-  }
-
-  private async callOllamaWithOptions(
-    prompt: string,
-    options: { temperature?: number; top_p?: number; num_ctx?: number; num_thread?: number } = {}
-  ): Promise<string> {
     try {
       const response = await fetch(`${this.ollamaUrl}/api/generate`, {
         method: 'POST',
@@ -78,10 +66,8 @@ export class LLMHelper {
           prompt: prompt,
           stream: false,
           options: {
-            temperature: options.temperature ?? 0.7,
-            top_p: options.top_p ?? 0.9,
-            num_ctx: options.num_ctx,
-            num_thread: options.num_thread ?? this.getOllamaThreadCount(),
+            temperature: 0.7,
+            top_p: 0.9,
           }
         }),
       })
@@ -141,170 +127,70 @@ export class LLMHelper {
 
   public async processMeetingAudio(audioBuffer: Buffer): Promise<{ success: boolean, transcription: string, notes: string, error?: string }> {
     try {
-      console.log("[LLMHelper] Starting meeting processing...")
+      console.log("[LLMHelper] Starting meeting processing...");
 
-      const transcription = await this.transcriptionHelper.transcribeAudio(audioBuffer)
-
+      // 1. Транскрибация (локально через Whisper)
+      const transcription = await this.transcriptionHelper.transcribeAudio(audioBuffer);
+      
       if (!transcription || transcription.trim().length === 0) {
-        return {
-          success: false,
-          transcription: "",
-          notes: "",
-          error: "Whisper не смог распознать речь или запись пустая."
-        }
+        return { 
+            success: false, 
+            transcription: "", 
+            notes: "", 
+            error: "Whisper не смог распознать речь или запись пустая." 
+        };
       }
 
-      console.log("[LLMHelper] Transcription complete. Length:", transcription.length)
+      console.log("[LLMHelper] Transcription complete. Length:", transcription.length);
 
-      const chunks = this.splitTextIntoChunks(transcription, 12000, 10000)
-      const extractedBlocks: string[] = []
-      let breadcrumbs = "Немає попереднього контексту."
+      // 2. Подготовка промпта для LLM
+      const prompt = `
+        Ти — професійний технічний асистент, що спеціалізується на створенні стислих та структурованих конспектів лекцій та технічних зустрічей. 
 
-      for (let index = 0; index < chunks.length; index++) {
-        const chunk = chunks[index]
-        console.log(`[LLMHelper] Processing chunk ${index + 1}/${chunks.length}`)
+        Твоє завдання: опрацювати транскрипцію та перетворити її на логічний конспект.
 
-        try {
-          const sanitizationPrompt = `Ти — редактор технічних текстів. Очисти транскрипцію від запинок, повторів та розмов не по темі. Залиш лише факти, терміни та логіку обговорення. Відповідай виключно очищеним текстом.
+        ### ПРАВИЛА ОФОРМЛЕННЯ:
+        1. СТИЛЬ: Жодних есе. Використовуй лише короткі тези, марковані списки та чіткі визначення.
+        2. МАТЕМАТИКА: Усі формули, змінні та математичні вирази обов'язково пиши у форматі LaTeX (наприклад, $R = \sum p_i \times v_i$).
+        3. СТРУКТУРА: 
+          - Виділяй логічні блоки жирними заголовками (##).
+          - Кожну окрему думку пиши з нового рядка з булетом (*).
+          - Використовуй жирний шрифт для ключових термінів.
+        4. МОВА: Відповідай ВИКЛЮЧНО українською мовою.
 
-Текст:
-"""
-${chunk}
-"""`
-          const sanitizedChunk = await this.callMeetingLLM(sanitizationPrompt, {
-            temperature: 0.1,
-            num_ctx: 4096,
-          })
+        ### АЛГОРИТМ ОПРАЦЮВАННЯ:
+        1. Класифікація понять: Виділи основні терміни, їхні види та ознаки.
+        2. Формалізація: Якщо в тексті є опис розрахунків або моделей, виведи їх у вигляді формул.
+        3. Сценарії/Приклади: Якщо згадуються конкретні випадки або умови (як-от сценарії ризику), винеси їх окремим блоком.
+        4. Action Items: Тільки якщо в тексті є конкретні доручення чи плани.
 
-          const extractionPrompt = `Контекст попередньої частини: ${breadcrumbs}
-Проаналізуй цей фрагмент. Виділи ключові тези, технічні параметри та формули в LaTeX ().
-Якщо є завдання або дедлайни — випиши їх окремо.
-Мова: Українська.
+        Текст транскрипції:
+        """
+        ${transcription}
+        """
+        
+        Надай результат у вигляді чистого конспекту без вступних фраз типу "Ось ваш конспект".
+      `;
 
-Фрагмент:
-"""
-${sanitizedChunk}
-"""`
-          const extractedChunk = await this.callMeetingLLM(extractionPrompt, {
-            temperature: 0.2,
-            num_ctx: 4096,
-          })
-
-          extractedBlocks.push(`### Блок ${index + 1}
-${extractedChunk}`)
-          breadcrumbs = this.buildBreadcrumbsFromExtraction(extractedChunk)
-        } catch (chunkError: any) {
-          console.error(`[LLMHelper] Failed to process chunk ${index + 1}:`, chunkError)
-        }
-      }
-
-      if (extractedBlocks.length === 0) {
-        return {
-          success: true,
-          transcription,
-          notes: `## Не вдалося побудувати конспект
-* Ollama не зміг обробити жоден чанк.
-* Збережено сирий текст транскрипції нижче.
-
-## Сирий текст
-${transcription}`,
-          error: "Chunk processing failed for all parts"
-        }
-      }
-
-      const synthesisPrompt = `Ти — професійний асистент. На основі наданих блоків створи фінальний конспект.
-1. Використовуй жирні заголовки (##).
-2. Математика — тільки в LaTeX.
-3. Окремий блок **'Action Items'**: чіткий список завдань, дедлайнів та організаційних рішень для студентів.
-4. Жодних вступних фраз, відразу до справи.
-
-Блоки для синтезу:
-"""
-${extractedBlocks.join("\n\n")}
-"""`
-
-      const notes = await this.callMeetingLLM(synthesisPrompt, {
-        temperature: 0.2,
-        num_ctx: 8192,
-      })
+      // 3. Отправка в LLM (Ollama или Gemini - в зависимости от того, что включено)
+      // Используем chatWithGemini, так как он внутри себя уже рулит выбором провайдера (Ollama/Gemini)
+      const notes = await this.chatWithGemini(prompt);
 
       return {
         success: true,
         transcription,
         notes
-      }
+      };
+
     } catch (error: any) {
-      console.error("[LLMHelper] Error processing meeting:", error)
-      return {
-        success: false,
-        transcription: "",
-        notes: "",
-        error: error.message
-      }
+      console.error("[LLMHelper] Error processing meeting:", error);
+      return { 
+          success: false, 
+          transcription: "", 
+          notes: "", 
+          error: error.message 
+      };
     }
-  }
-
-  private splitTextIntoChunks(text: string, maxChunkLength: number = 12000, targetChunkLength: number = 10000): string[] {
-    const normalizedText = text.replace(/\s+/g, " ").trim()
-    if (!normalizedText) return []
-
-    const sentenceParts = normalizedText.match(/[^.!?]+[.!?]+|[^.!?]+$/g) ?? [normalizedText]
-    const sentences = sentenceParts.map((sentence) => sentence.trim()).filter(Boolean)
-    const chunks: string[] = []
-    let currentChunk = ""
-
-    for (const sentence of sentences) {
-      if (sentence.length > maxChunkLength) {
-        if (currentChunk) {
-          chunks.push(currentChunk.trim())
-          currentChunk = ""
-        }
-
-        for (let i = 0; i < sentence.length; i += maxChunkLength) {
-          chunks.push(sentence.slice(i, i + maxChunkLength).trim())
-        }
-        continue
-      }
-
-      const candidate = currentChunk ? `${currentChunk} ${sentence}` : sentence
-      if (candidate.length > maxChunkLength || (currentChunk.length >= targetChunkLength && candidate.length > targetChunkLength)) {
-        chunks.push(currentChunk.trim())
-        currentChunk = sentence
-      } else {
-        currentChunk = candidate
-      }
-    }
-
-    if (currentChunk.trim()) {
-      chunks.push(currentChunk.trim())
-    }
-
-    return chunks
-  }
-
-  private buildBreadcrumbsFromExtraction(extractedChunk: string): string {
-    const lines = extractedChunk
-      .split("\n")
-      .map((line) => line.trim())
-      .filter((line) => line.length > 0)
-      .map((line) => line.replace(/^[-*•]\s*/, ""))
-      .filter((line) => !line.startsWith("##") && !line.startsWith("###"))
-
-    return lines.slice(0, 5).map((line) => `- ${line}`).join("\n") || "Немає попереднього контексту."
-  }
-
-  private async callMeetingLLM(
-    prompt: string,
-    options: { temperature?: number; num_ctx?: number }
-  ): Promise<string> {
-    if (this.useOllama) {
-      return this.callOllamaWithOptions(prompt, {
-        ...options,
-        top_p: 0.9,
-      })
-    }
-
-    return this.chatWithGemini(prompt)
   }
 
   public async extractProblemFromImages(imagePaths: string[]) {
