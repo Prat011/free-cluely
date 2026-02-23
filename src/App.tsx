@@ -44,6 +44,7 @@ declare global {
       analyzeAudioFile: (path: string) => Promise<{ text: string; timestamp: number }>
       analyzeImageFile: (path: string) => Promise<{ text: string; timestamp: number }>
       chatWithImage: (message: string, imagePath: string) => Promise<string>
+      chatWithImages: (message: string, imagePaths: string[]) => Promise<string>
 
       moveWindowLeft: () => Promise<void>
       moveWindowRight: () => Promise<void>
@@ -55,7 +56,7 @@ declare global {
       getCurrentLlmConfig: () => Promise<{ provider: "ollama" | "gemini"; model: string; isOllama: boolean }>
       getAvailableOllamaModels: () => Promise<string[]>
       switchToOllama: (model?: string, url?: string) => Promise<{ success: boolean; error?: string }>
-      switchToGemini: (apiKey?: string) => Promise<{ success: boolean; error?: string }>
+      switchToGemini: (apiKey?: string, model?: string) => Promise<{ success: boolean; error?: string }>
       testLlmConnection: () => Promise<{ success: boolean; error?: string }>
       
       invoke: (channel: string, ...args: any[]) => Promise<any>

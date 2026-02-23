@@ -125,6 +125,18 @@ export function initializeIpcHandlers(appState: AppState): void {
     }
   })
 
+  ipcMain.handle("gemini-chat-with-images", async (_, message: string, imagePaths: string[]) => {
+    try {
+      const result = await appState.processingHelper
+        .getLLMHelper()
+        .chatWithImages(message, imagePaths)
+      return result
+    } catch (error: any) {
+      console.error("Error in gemini-chat-with-images handler:", error)
+      throw error
+    }
+  })
+
   ipcMain.handle("quit-app", () => {
     app.quit()
   })
@@ -187,10 +199,10 @@ export function initializeIpcHandlers(appState: AppState): void {
     }
   });
 
-  ipcMain.handle("switch-to-gemini", async (_, apiKey?: string) => {
+  ipcMain.handle("switch-to-gemini", async (_, apiKey?: string, model?: string) => {
     try {
       const llmHelper = appState.processingHelper.getLLMHelper();
-      await llmHelper.switchToGemini(apiKey);
+      await llmHelper.switchToGemini(apiKey, model);
       return { success: true };
     } catch (error: any) {
       console.error("Error switching to Gemini:", error);

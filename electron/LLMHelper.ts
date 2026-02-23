@@ -6,8 +6,13 @@ interface OllamaResponse {
   done: boolean
 }
 
+const GEMINI_DEFAULT_MODEL = process.env.GEMINI_MODEL || "gemini-3.1-pro-preview"
+const GEMINI_FALLBACK_MODEL = "gemini-2.5-flash"
+
 export class LLMHelper {
   private model: GenerativeModel | null = null
+  private geminiApiKey?: string
+  private geminiModel: string = GEMINI_DEFAULT_MODEL
   private readonly systemPrompt = `You are Wingman AI, an elite LeetCode and competitive-programming coding assistant.
 
 Default behavior for coding tasks (text or screenshot):
@@ -33,12 +38,19 @@ If a later instruction requires strict JSON output, follow that instruction exac
       // Auto-detect and use first available model if specified model doesn't exist
       this.initializeOllamaModel()
     } else if (apiKey) {
-      const genAI = new GoogleGenerativeAI(apiKey)
-      this.model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" })
-      console.log("[LLMHelper] Using Google Gemini")
+      this.initializeGeminiModel(apiKey, this.geminiModel)
+      console.log(`[LLMHelper] Using Google Gemini model: ${this.geminiModel}`)
     } else {
       throw new Error("Either provide Gemini API key or enable Ollama mode")
     }
+  }
+
+  private initializeGeminiModel(apiKey: string, modelName?: string): void {
+    const genAI = new GoogleGenerativeAI(apiKey)
+    const selectedModel = modelName || this.geminiModel || GEMINI_DEFAULT_MODEL
+    this.model = genAI.getGenerativeModel({ model: selectedModel })
+    this.geminiModel = selectedModel
+    this.geminiApiKey = apiKey
   }
 
   private async fileToGenerativePart(imagePath: string) {
@@ -94,12 +106,16 @@ If a later instruction requires strict JSON output, follow that instruction exac
     return `${this.systemPrompt}\n\nUser message:\n${message}\n\nIf this is a coding request, output only the final function/method code.`
   }
 
-  private buildLeetCodeVisionPrompt(userInstruction?: string): string {
+  private buildLeetCodeVisionPrompt(userInstruction?: string, imageCount: number = 1): string {
     const normalizedInstruction = userInstruction?.trim()
+    const imageContext =
+      imageCount > 1
+        ? `You are given ${imageCount} screenshots/images of the same coding problem. Combine information from all screenshots before solving.`
+        : "You are given a screenshot/image of a coding problem (typically LeetCode/competitive programming) and optional user instruction."
 
     return `${this.systemPrompt}
 
-You are given a screenshot/image of a coding problem (typically LeetCode/competitive programming) and optional user instruction.
+${imageContext}
 Read the full prompt from the image: statement, constraints, examples, and starter/editor code.
 Infer the expected language and required function or method signature from the screenshot/editor panel.
 
@@ -310,7 +326,13 @@ ${normalizedInstruction || "Solve the problem from the image with the exact fina
   }
 
   public async chatWithImage(message: string, imagePath: string): Promise<string> {
-    if (!imagePath) {
+    return this.chatWithImages(message, [imagePath])
+  }
+
+  public async chatWithImages(message: string, imagePaths: string[]): Promise<string> {
+    const normalizedPaths = Array.from(new Set((imagePaths || []).filter(Boolean))).slice(0, 2)
+
+    if (normalizedPaths.length === 0) {
       throw new Error("Image path is required for image-based chat")
     }
 
@@ -324,9 +346,11 @@ ${normalizedInstruction || "Solve the problem from the image with the exact fina
       throw new Error("No Gemini model configured for image analysis")
     }
 
-    const imagePart = await this.fileToGenerativePart(imagePath)
-    const prompt = this.buildLeetCodeVisionPrompt(message)
-    const result = await this.model.generateContent([prompt, imagePart])
+    const imageParts = await Promise.all(
+      normalizedPaths.map((imagePath) => this.fileToGenerativePart(imagePath))
+    )
+    const prompt = this.buildLeetCodeVisionPrompt(message, normalizedPaths.length)
+    const result = await this.model.generateContent([prompt, ...imageParts])
     const response = await result.response
     let code = this.cleanCodeResponse(response.text())
 
@@ -336,7 +360,7 @@ ${normalizedInstruction || "Solve the problem from the image with the exact fina
 
 Your previous output was not valid code-only output.
 Return ONLY the final code now. No prose.`
-      const retryResult = await this.model.generateContent([retryPrompt, imagePart])
+      const retryResult = await this.model.generateContent([retryPrompt, ...imageParts])
       const retryResponse = await retryResult.response
       code = this.cleanCodeResponse(retryResponse.text())
     }
@@ -351,9 +375,23 @@ Return ONLY the final code now. No prose.`
         const text = await this.callOllama(prompt)
         return this.cleanCodeResponse(text)
       } else if (this.model) {
-        const result = await this.model.generateContent(prompt);
-        const response = await result.response;
-        return this.cleanCodeResponse(response.text());
+        try {
+          const result = await this.model.generateContent(prompt);
+          const response = await result.response;
+          return this.cleanCodeResponse(response.text());
+        } catch (error: any) {
+          // Fallback for environments where the selected Gemini 3 preview model is unavailable.
+          if (this.geminiModel !== GEMINI_FALLBACK_MODEL && this.geminiApiKey) {
+            const messageText = String(error?.message || "")
+            if (messageText.includes("model") || messageText.includes("not found") || messageText.includes("404")) {
+              this.initializeGeminiModel(this.geminiApiKey, GEMINI_FALLBACK_MODEL)
+              const retryResult = await this.model.generateContent(prompt)
+              const retryResponse = await retryResult.response
+              return this.cleanCodeResponse(retryResponse.text())
+            }
+          }
+          throw error
+        }
       } else {
         throw new Error("No LLM provider configured");
       }
@@ -391,7 +429,7 @@ Return ONLY the final code now. No prose.`
   }
 
   public getCurrentModel(): string {
-    return this.useOllama ? this.ollamaModel : "gemini-2.0-flash";
+    return this.useOllama ? this.ollamaModel : this.geminiModel;
   }
 
   public async switchToOllama(model?: string, url?: string): Promise<void> {
@@ -408,18 +446,15 @@ Return ONLY the final code now. No prose.`
     console.log(`[LLMHelper] Switched to Ollama: ${this.ollamaModel} at ${this.ollamaUrl}`);
   }
 
-  public async switchToGemini(apiKey?: string): Promise<void> {
-    if (apiKey) {
-      const genAI = new GoogleGenerativeAI(apiKey);
-      this.model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
-    }
-    
-    if (!this.model && !apiKey) {
+  public async switchToGemini(apiKey?: string, model?: string): Promise<void> {
+    const resolvedApiKey = apiKey || this.geminiApiKey || process.env.GEMINI_API_KEY
+    if (!resolvedApiKey) {
       throw new Error("No Gemini API key provided and no existing model instance");
     }
-    
+
+    this.initializeGeminiModel(resolvedApiKey, model || this.geminiModel)
     this.useOllama = false;
-    console.log("[LLMHelper] Switched to Gemini");
+    console.log(`[LLMHelper] Switched to Gemini model: ${this.geminiModel}`);
   }
 
   public async testConnection(): Promise<{ success: boolean; error?: string }> {

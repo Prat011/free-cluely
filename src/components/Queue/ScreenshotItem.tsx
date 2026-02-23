@@ -12,22 +12,35 @@ interface ScreenshotItemProps {
   onDelete: (index: number) => void
   index: number
   isLoading: boolean
+  selected?: boolean
+  onToggleSelection?: (path: string) => void
 }
 
 const ScreenshotItem: React.FC<ScreenshotItemProps> = ({
   screenshot,
   onDelete,
   index,
-  isLoading
+  isLoading,
+  selected = false,
+  onToggleSelection
 }) => {
   const handleDelete = async () => {
     await onDelete(index)
   }
 
+  const handleSelect = () => {
+    if (!isLoading && onToggleSelection) {
+      onToggleSelection(screenshot.path)
+    }
+  }
+
   return (
     <>
       <div
-        className={`border border-white relative ${isLoading ? "" : "group"}`}
+        className={`relative border transition-colors ${
+          selected ? "border-blue-400" : "border-white"
+        } ${isLoading ? "" : "group"}`}
+        onClick={handleSelect}
       >
         <div className="w-full h-full relative">
           {isLoading && (
@@ -44,6 +57,11 @@ const ScreenshotItem: React.FC<ScreenshotItemProps> = ({
                 : "cursor-pointer group-hover:scale-105 group-hover:brightness-75"
             }`}
           />
+          {selected && (
+            <div className="absolute right-2 top-2 z-20 rounded-full bg-blue-500 px-1.5 py-0.5 text-[10px] text-white">
+              Selected
+            </div>
+          )}
         </div>
         {!isLoading && (
           <button

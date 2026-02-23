@@ -20,6 +20,8 @@ interface QueueProps {
   setView: React.Dispatch<React.SetStateAction<"queue" | "solutions" | "debug">>
 }
 
+const MAX_SCREENSHOT_ATTACHMENTS = 5
+
 const detectCodeLanguage = (content: string): string => {
   if (/(#include\s*<|std::|vector<|unordered_map<|using\s+namespace\s+std)/.test(content)) {
     return "cpp"
@@ -163,11 +165,12 @@ const Queue: React.FC<QueueProps> = ({ setView }) => {
   const [chatMessages, setChatMessages] = useState<{role: "user"|"gemini", text: string}[]>([])
   const [chatLoading, setChatLoading] = useState(false)
   const [isChatOpen, setIsChatOpen] = useState(false)
-  const [attachLatestScreenshot, setAttachLatestScreenshot] = useState(true)
+  const [attachScreenshots, setAttachScreenshots] = useState(true)
+  const [selectedScreenshotPaths, setSelectedScreenshotPaths] = useState<string[]>([])
   const chatInputRef = useRef<HTMLInputElement>(null)
   
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
-  const [currentModel, setCurrentModel] = useState<{ provider: string; model: string }>({ provider: "gemini", model: "gemini-3-pro-preview" })
+  const [currentModel, setCurrentModel] = useState<{ provider: string; model: string }>({ provider: "gemini", model: "gemini-3.1-pro-preview" })
 
   const barRef = useRef<HTMLDivElement>(null)
 
@@ -221,29 +224,30 @@ const Queue: React.FC<QueueProps> = ({ setView }) => {
 
   const handleChatSend = async () => {
     const trimmedInput = chatInput.trim()
-    const latestScreenshotPath =
-      screenshots.length > 0 ? screenshots[screenshots.length - 1].path : ""
-    const shouldAttachImage = attachLatestScreenshot && Boolean(latestScreenshotPath)
+    const selectedPaths = attachScreenshots
+      ? selectedScreenshotPaths.slice(0, MAX_SCREENSHOT_ATTACHMENTS)
+      : []
+    const shouldAttachImages = selectedPaths.length > 0
 
-    if (!trimmedInput && !shouldAttachImage) return
+    if (!trimmedInput && !shouldAttachImages) return
 
     setChatMessages((msgs) => [
       ...msgs,
       {
         role: "user",
-        text: shouldAttachImage
-          ? `${trimmedInput || "Solve the attached screenshot."}\n[Attached: latest screenshot]`
+        text: shouldAttachImages
+          ? `${trimmedInput || "Solve the attached screenshots."}\n[Attached: ${selectedPaths.length} screenshot${selectedPaths.length > 1 ? "s" : ""}]`
           : trimmedInput
       }
     ])
     setChatLoading(true)
     setChatInput("")
     try {
-      const response = shouldAttachImage
+      const response = shouldAttachImages
         ? await window.electronAPI.invoke(
-            "gemini-chat-with-image",
+            "gemini-chat-with-images",
             trimmedInput,
-            latestScreenshotPath
+            selectedPaths
           )
         : await window.electronAPI.invoke("gemini-chat", trimmedInput)
 
@@ -251,7 +255,7 @@ const Queue: React.FC<QueueProps> = ({ setView }) => {
     } catch (err) {
       const errorText = String(err)
       const hint =
-        shouldAttachImage &&
+        shouldAttachImages &&
         (errorText.includes("No handler registered") ||
           errorText.includes("No handler") ||
           errorText.includes("No listeners registered"))
@@ -325,6 +329,28 @@ const Queue: React.FC<QueueProps> = ({ setView }) => {
     }
   }, [isTooltipVisible, tooltipHeight])
 
+  useEffect(() => {
+    setSelectedScreenshotPaths((prev) => {
+      const validPaths = new Set(screenshots.map((screenshot) => screenshot.path))
+      const filtered = prev.filter((path) => validPaths.has(path)).slice(0, MAX_SCREENSHOT_ATTACHMENTS)
+
+      if (filtered.length > 0 || screenshots.length === 0) {
+        return filtered
+      }
+
+      return [screenshots[screenshots.length - 1].path]
+    })
+  }, [screenshots])
+
+  const handleToggleScreenshotSelection = (path: string) => {
+    setSelectedScreenshotPaths((prev) => {
+      if (prev.includes(path)) {
+        return prev.filter((item) => item !== path)
+      }
+      return [...prev, path].slice(-MAX_SCREENSHOT_ATTACHMENTS)
+    })
+  }
+
   const handleTooltipVisibilityChange = (visible: boolean, height: number) => {
     setIsTooltipVisible(visible)
     setTooltipHeight(height)
@@ -388,6 +414,17 @@ const Queue: React.FC<QueueProps> = ({ setView }) => {
           {/* Conditional Chat Interface */}
           {isChatOpen && (
             <div className="mt-4 w-full mx-auto liquid-glass chat-container p-4 flex flex-col">
+            {screenshots.length > 0 && (
+              <div className="mb-3">
+                <ScreenshotQueue
+                  isLoading={chatLoading}
+                  screenshots={screenshots}
+                  onDeleteScreenshot={handleDeleteScreenshot}
+                  selectedScreenshotPaths={selectedScreenshotPaths}
+                  onToggleSelection={handleToggleScreenshotSelection}
+                />
+              </div>
+            )}
             <div className="flex-1 overflow-y-auto mb-3 p-3 rounded-lg bg-white/10 backdrop-blur-md max-h-64 min-h-[120px] glass-content border border-white/20 shadow-lg">
               {chatMessages.length === 0 ? (
                 <div className="text-sm text-gray-600 text-center mt-8">
@@ -437,18 +474,25 @@ const Queue: React.FC<QueueProps> = ({ setView }) => {
               <label className="inline-flex items-center gap-1.5 cursor-pointer">
                 <input
                   type="checkbox"
-                  checked={attachLatestScreenshot}
-                  onChange={(e) => setAttachLatestScreenshot(e.target.checked)}
+                  checked={attachScreenshots}
+                  onChange={(e) => setAttachScreenshots(e.target.checked)}
                   className="h-3 w-3 rounded border-gray-300 text-gray-700 focus:ring-gray-500"
                 />
-                Attach latest screenshot
+                Attach screenshots (up to 2)
               </label>
-              {attachLatestScreenshot && (
-                <span className={screenshots.length > 0 ? "text-gray-600" : "text-red-500"}>
-                  {screenshots.length > 0 ? "ready" : "no screenshot available"}
+              {attachScreenshots && (
+                <span className={selectedScreenshotPaths.length > 0 ? "text-gray-600" : "text-red-500"}>
+                  {selectedScreenshotPaths.length > 0
+                    ? `${selectedScreenshotPaths.length}/${MAX_SCREENSHOT_ATTACHMENTS} selected`
+                    : "select screenshot(s) above"}
                 </span>
               )}
             </div>
+            {attachScreenshots && screenshots.length > 0 && (
+              <div className="mb-2 px-1 text-[10px] text-gray-500">
+                Click thumbnails to select up to {MAX_SCREENSHOT_ATTACHMENTS} screenshots for one message.
+              </div>
+            )}
             <form
               className="flex gap-2 items-center glass-content"
               onSubmit={e => {
@@ -459,7 +503,7 @@ const Queue: React.FC<QueueProps> = ({ setView }) => {
               <input
                 ref={chatInputRef}
                 className="flex-1 rounded-lg px-3 py-2 bg-white/25 backdrop-blur-md text-gray-800 placeholder-gray-500 text-xs focus:outline-none focus:ring-1 focus:ring-gray-400/60 border border-white/40 shadow-lg transition-all duration-200"
-                placeholder={attachLatestScreenshot ? "Add instruction (optional) and send..." : "Type your message..."}
+                placeholder={attachScreenshots ? "Add instruction (optional) and send..." : "Type your message..."}
                 value={chatInput}
                 onChange={e => setChatInput(e.target.value)}
                 disabled={chatLoading}
@@ -469,7 +513,7 @@ const Queue: React.FC<QueueProps> = ({ setView }) => {
                 className="p-2 rounded-lg bg-gray-600/80 hover:bg-gray-700/80 border border-gray-500/60 flex items-center justify-center transition-all duration-200 backdrop-blur-sm shadow-lg disabled:opacity-50"
                 disabled={
                   chatLoading ||
-                  (!chatInput.trim() && !(attachLatestScreenshot && screenshots.length > 0))
+                  (!chatInput.trim() && !(attachScreenshots && selectedScreenshotPaths.length > 0))
                 }
                 tabIndex={-1}
                 aria-label="Send"
