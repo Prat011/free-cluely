@@ -8,7 +8,16 @@ interface OllamaResponse {
 
 export class LLMHelper {
   private model: GenerativeModel | null = null
-  private readonly systemPrompt = `You are Wingman AI, a helpful, proactive assistant for any kind of problem or situation (not just coding). For any user input, analyze the situation, provide a clear problem statement, relevant context, and suggest several possible responses or actions the user could take next. Always explain your reasoning. Present your suggestions as a list of options or next steps.`
+  private readonly systemPrompt = `You are Wingman AI, an elite LeetCode and competitive-programming coding assistant.
+
+Default behavior for coding tasks (text or screenshot):
+- Solve directly. Do not ask clarification questions.
+- Detect and follow the target language from user text or screenshot editor panel.
+- Preserve the exact signature/style expected by the platform (LeetCode-style method/class wrapper when shown).
+- Return ONLY the final code the user should paste.
+- Never include markdown fences, explanation, complexity, comments, or extra prose unless strict JSON is explicitly requested.
+
+If a later instruction requires strict JSON output, follow that instruction exactly and do not add markdown wrappers or extra text.`
   private useOllama: boolean = false
   private ollamaModel: string = "llama3.2"
   private ollamaUrl: string = "http://localhost:11434"
@@ -48,6 +57,60 @@ export class LLMHelper {
     // Remove any leading/trailing whitespace
     text = text.trim();
     return text;
+  }
+
+  private cleanCodeResponse(text: string): string {
+    const fencedBlockMatch = text.match(/```(?:[\w.+-]+)?\s*([\s\S]*?)```/)
+    if (fencedBlockMatch?.[1]) {
+      return fencedBlockMatch[1].trim()
+    }
+
+    return text
+      .replace(/^```[\w.+-]*\s*/g, "")
+      .replace(/\s*```$/g, "")
+      .trim()
+  }
+
+  private isLikelyCode(text: string): boolean {
+    const candidate = text.trim()
+    if (!candidate) return false
+
+    if (/^#include\s+/m.test(candidate) || /\busing namespace\b/m.test(candidate)) {
+      return true
+    }
+
+    if (/\b(class|def|function|public|private|protected|return|if|for|while|switch)\b/m.test(candidate)) {
+      return true
+    }
+
+    if (/[{};]/.test(candidate)) {
+      return true
+    }
+
+    return false
+  }
+
+  private buildChatPrompt(message: string): string {
+    return `${this.systemPrompt}\n\nUser message:\n${message}\n\nIf this is a coding request, output only the final function/method code.`
+  }
+
+  private buildLeetCodeVisionPrompt(userInstruction?: string): string {
+    const normalizedInstruction = userInstruction?.trim()
+
+    return `${this.systemPrompt}
+
+You are given a screenshot/image of a coding problem (typically LeetCode/competitive programming) and optional user instruction.
+Read the full prompt from the image: statement, constraints, examples, and starter/editor code.
+Infer the expected language and required function or method signature from the screenshot/editor panel.
+
+Output rules:
+- Output EXACTLY the final function/method implementation to paste.
+- Keep the expected function/class wrapper style if the screenshot shows it.
+- No explanation, no questions, no markdown, no extra text.
+- If user instruction asks for a specific optimization or style, apply it while keeping output format strict.
+
+User instruction:
+${normalizedInstruction || "Solve the problem from the image with the exact final function only."}`
   }
 
   private async callOllama(prompt: string): Promise<string> {
@@ -235,17 +298,10 @@ export class LLMHelper {
 
   public async analyzeImageFile(imagePath: string) {
     try {
-      const imageData = await fs.promises.readFile(imagePath);
-      const imagePart = {
-        inlineData: {
-          data: imageData.toString("base64"),
-          mimeType: "image/png"
-        }
-      };
-      const prompt = `${this.systemPrompt}\n\nDescribe the content of this image in a short, concise answer. In addition to your main answer, suggest several possible actions or responses the user could take next based on the image. Do not return a structured JSON object, just answer naturally as you would to a user. Be concise and brief.`;
-      const result = await this.model.generateContent([prompt, imagePart]);
-      const response = await result.response;
-      const text = response.text();
+      const text = await this.chatWithImage(
+        "Solve this LeetCode/competitive programming problem from the screenshot.",
+        imagePath
+      )
       return { text, timestamp: Date.now() };
     } catch (error) {
       console.error("Error analyzing image file:", error);
@@ -253,14 +309,51 @@ export class LLMHelper {
     }
   }
 
+  public async chatWithImage(message: string, imagePath: string): Promise<string> {
+    if (!imagePath) {
+      throw new Error("Image path is required for image-based chat")
+    }
+
+    if (this.useOllama) {
+      throw new Error(
+        "Image + prompt solving currently requires Gemini. Switch provider to Gemini in Models."
+      )
+    }
+
+    if (!this.model) {
+      throw new Error("No Gemini model configured for image analysis")
+    }
+
+    const imagePart = await this.fileToGenerativePart(imagePath)
+    const prompt = this.buildLeetCodeVisionPrompt(message)
+    const result = await this.model.generateContent([prompt, imagePart])
+    const response = await result.response
+    let code = this.cleanCodeResponse(response.text())
+
+    // If the model drifts into prose, force one strict retry to return only code.
+    if (!this.isLikelyCode(code)) {
+      const retryPrompt = `${prompt}
+
+Your previous output was not valid code-only output.
+Return ONLY the final code now. No prose.`
+      const retryResult = await this.model.generateContent([retryPrompt, imagePart])
+      const retryResponse = await retryResult.response
+      code = this.cleanCodeResponse(retryResponse.text())
+    }
+
+    return code
+  }
+
   public async chatWithGemini(message: string): Promise<string> {
     try {
+      const prompt = this.buildChatPrompt(message)
       if (this.useOllama) {
-        return this.callOllama(message);
+        const text = await this.callOllama(prompt)
+        return this.cleanCodeResponse(text)
       } else if (this.model) {
-        const result = await this.model.generateContent(message);
+        const result = await this.model.generateContent(prompt);
         const response = await result.response;
-        return response.text();
+        return this.cleanCodeResponse(response.text());
       } else {
         throw new Error("No LLM provider configured");
       }

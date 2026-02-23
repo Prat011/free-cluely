@@ -113,6 +113,18 @@ export function initializeIpcHandlers(appState: AppState): void {
     }
   });
 
+  ipcMain.handle("gemini-chat-with-image", async (_, message: string, imagePath: string) => {
+    try {
+      const result = await appState.processingHelper
+        .getLLMHelper()
+        .chatWithImage(message, imagePath)
+      return result
+    } catch (error: any) {
+      console.error("Error in gemini-chat-with-image handler:", error)
+      throw error
+    }
+  })
+
   ipcMain.handle("quit-app", () => {
     app.quit()
   })

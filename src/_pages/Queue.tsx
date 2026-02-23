@@ -1,5 +1,10 @@
 import React, { useState, useEffect, useRef } from "react"
 import { useQuery } from "react-query"
+import ReactMarkdown from "react-markdown"
+import type { Components } from "react-markdown"
+import remarkGfm from "remark-gfm"
+import { Prism as SyntaxHighlighter } from "react-syntax-highlighter"
+import { oneLight } from "react-syntax-highlighter/dist/esm/styles/prism"
 import ScreenshotQueue from "../components/Queue/ScreenshotQueue"
 import {
   Toast,
@@ -14,6 +19,133 @@ import ModelSelector from "../components/ui/ModelSelector"
 interface QueueProps {
   setView: React.Dispatch<React.SetStateAction<"queue" | "solutions" | "debug">>
 }
+
+const detectCodeLanguage = (content: string): string => {
+  if (/(#include\s*<|std::|vector<|unordered_map<|using\s+namespace\s+std)/.test(content)) {
+    return "cpp"
+  }
+  if (/(^\s*def\s+\w+\(|^\s*import\s+\w+|^\s*from\s+\w+\s+import\s+)/m.test(content)) {
+    return "python"
+  }
+  if (/(^\s*(const|let|var)\s+\w+|console\.log\(|=>\s*{?|function\s+\w+\()/m.test(content)) {
+    return "javascript"
+  }
+  if (/(^\s*public\s+class\s+\w+|System\.out\.println|^\s*class\s+\w+\s*{)/m.test(content)) {
+    return "java"
+  }
+  if (/(^\s*func\s+\w+\(|^\s*package\s+main|fmt\.)/m.test(content)) {
+    return "go"
+  }
+  if (/(^\s*fn\s+\w+\(|^\s*let\s+mut\s+\w+)/m.test(content)) {
+    return "rust"
+  }
+  return "text"
+}
+
+const isLikelyPlainCodeBlock = (content: string): boolean => {
+  const trimmed = content.trim()
+  if (!trimmed || trimmed.startsWith("```")) return false
+
+  const lines = trimmed.split("\n").map((line) => line.trim()).filter(Boolean)
+  if (lines.length < 3) return false
+
+  const codeLikeLines = lines.filter((line) =>
+    /[{};]$|^\s*#include|^\s*(class|def|function|public:|private:|protected:|return|if|for|while|switch)\b|^\s*\w[\w:<>,\s*&]*\s+\w+\s*\([^)]*\)\s*\{?$/.test(
+      line
+    )
+  )
+
+  return codeLikeLines.length >= Math.max(2, Math.floor(lines.length * 0.35))
+}
+
+const chatMarkdownComponents: Components = {
+  p: ({ children }) => (
+    <p className="mb-2 whitespace-pre-wrap last:mb-0">{children}</p>
+  ),
+  ul: ({ children }) => (
+    <ul className="mb-2 list-disc pl-4 last:mb-0">{children}</ul>
+  ),
+  ol: ({ children }) => (
+    <ol className="mb-2 list-decimal pl-4 last:mb-0">{children}</ol>
+  ),
+  li: ({ children }) => <li className="mb-1 last:mb-0">{children}</li>,
+  a: ({ href, children }) => (
+    <a
+      href={href}
+      target="_blank"
+      rel="noreferrer"
+      className="text-blue-600 underline underline-offset-2"
+    >
+      {children}
+    </a>
+  ),
+  pre: ({ children }) => <>{children}</>,
+  code: ({ className, children }) => {
+    const languageMatch = /language-(\w+)/.exec(className || "")
+    const codeText = String(children).replace(/\n$/, "")
+    const isBlock = Boolean(languageMatch) || codeText.includes("\n")
+
+    if (!isBlock) {
+      return (
+        <code className="rounded bg-gray-200/70 px-1 py-0.5 font-mono text-[11px] text-gray-900">
+          {children}
+        </code>
+      )
+    }
+
+    return (
+      <div className="my-2 overflow-hidden rounded-md border border-gray-300 bg-gray-100/95">
+        <SyntaxHighlighter
+          language={languageMatch?.[1] || "text"}
+          style={oneLight}
+          customStyle={{
+            margin: 0,
+            padding: "0.75rem",
+            fontSize: "0.72rem",
+            lineHeight: "1.45",
+            background: "transparent",
+            color: "#111827"
+          }}
+          lineNumberStyle={{ color: "#4b5563" }}
+          codeTagProps={{ style: { color: "#111827" } }}
+          wrapLongLines
+        >
+          {codeText}
+        </SyntaxHighlighter>
+      </div>
+    )
+  }
+}
+
+const ChatMarkdown = ({ content }: { content: string }) => (
+  <div className="text-xs leading-relaxed text-gray-700">
+    {isLikelyPlainCodeBlock(content) ? (
+      <div className="my-1 overflow-hidden rounded-md border border-gray-300 bg-gray-100/95">
+        <SyntaxHighlighter
+          language={detectCodeLanguage(content)}
+          style={oneLight}
+          customStyle={{
+            margin: 0,
+            padding: "0.75rem",
+            fontSize: "0.72rem",
+            lineHeight: "1.45",
+            background: "transparent",
+            color: "#111827"
+          }}
+          lineNumberStyle={{ color: "#4b5563" }}
+          codeTagProps={{ style: { color: "#111827" } }}
+          wrapLongLines
+        >
+          {content.trim()}
+        </SyntaxHighlighter>
+      </div>
+    ) : (
+      <ReactMarkdown remarkPlugins={[remarkGfm]} components={chatMarkdownComponents}>
+        {content}
+      </ReactMarkdown>
+    )}
+  </div>
+)
 
 const Queue: React.FC<QueueProps> = ({ setView }) => {
   const [toastOpen, setToastOpen] = useState(false)
@@ -31,6 +163,7 @@ const Queue: React.FC<QueueProps> = ({ setView }) => {
   const [chatMessages, setChatMessages] = useState<{role: "user"|"gemini", text: string}[]>([])
   const [chatLoading, setChatLoading] = useState(false)
   const [isChatOpen, setIsChatOpen] = useState(false)
+  const [attachLatestScreenshot, setAttachLatestScreenshot] = useState(true)
   const chatInputRef = useRef<HTMLInputElement>(null)
   
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
@@ -87,15 +220,44 @@ const Queue: React.FC<QueueProps> = ({ setView }) => {
   }
 
   const handleChatSend = async () => {
-    if (!chatInput.trim()) return
-    setChatMessages((msgs) => [...msgs, { role: "user", text: chatInput }])
+    const trimmedInput = chatInput.trim()
+    const latestScreenshotPath =
+      screenshots.length > 0 ? screenshots[screenshots.length - 1].path : ""
+    const shouldAttachImage = attachLatestScreenshot && Boolean(latestScreenshotPath)
+
+    if (!trimmedInput && !shouldAttachImage) return
+
+    setChatMessages((msgs) => [
+      ...msgs,
+      {
+        role: "user",
+        text: shouldAttachImage
+          ? `${trimmedInput || "Solve the attached screenshot."}\n[Attached: latest screenshot]`
+          : trimmedInput
+      }
+    ])
     setChatLoading(true)
     setChatInput("")
     try {
-      const response = await window.electronAPI.invoke("gemini-chat", chatInput)
+      const response = shouldAttachImage
+        ? await window.electronAPI.invoke(
+            "gemini-chat-with-image",
+            trimmedInput,
+            latestScreenshotPath
+          )
+        : await window.electronAPI.invoke("gemini-chat", trimmedInput)
+
       setChatMessages((msgs) => [...msgs, { role: "gemini", text: response }])
     } catch (err) {
-      setChatMessages((msgs) => [...msgs, { role: "gemini", text: "Error: " + String(err) }])
+      const errorText = String(err)
+      const hint =
+        shouldAttachImage &&
+        (errorText.includes("No handler registered") ||
+          errorText.includes("No handler") ||
+          errorText.includes("No listeners registered"))
+          ? " Image chat route is not loaded. Restart the app once."
+          : ""
+      setChatMessages((msgs) => [...msgs, { role: "gemini", text: "Error: " + errorText + hint }])
     } finally {
       setChatLoading(false)
       chatInputRef.current?.focus()
@@ -163,33 +325,6 @@ const Queue: React.FC<QueueProps> = ({ setView }) => {
     }
   }, [isTooltipVisible, tooltipHeight])
 
-  // Seamless screenshot-to-LLM flow
-  useEffect(() => {
-    // Listen for screenshot taken event
-    const unsubscribe = window.electronAPI.onScreenshotTaken(async (data) => {
-      // Refetch screenshots to update the queue
-      await refetch();
-      // Show loading in chat
-      setChatLoading(true);
-      try {
-        // Get the latest screenshot path
-        const latest = data?.path || (Array.isArray(data) && data.length > 0 && data[data.length - 1]?.path);
-        if (latest) {
-          // Call the LLM to process the screenshot
-          const response = await window.electronAPI.invoke("analyze-image-file", latest);
-          setChatMessages((msgs) => [...msgs, { role: "gemini", text: response.text }]);
-        }
-      } catch (err) {
-        setChatMessages((msgs) => [...msgs, { role: "gemini", text: "Error: " + String(err) }]);
-      } finally {
-        setChatLoading(false);
-      }
-    });
-    return () => {
-      unsubscribe && unsubscribe();
-    };
-  }, [refetch]);
-
   const handleTooltipVisibilityChange = (visible: boolean, height: number) => {
     setIsTooltipVisible(visible)
     setTooltipHeight(height)
@@ -206,10 +341,10 @@ const Queue: React.FC<QueueProps> = ({ setView }) => {
   const handleModelChange = (provider: "ollama" | "gemini", model: string) => {
     setCurrentModel({ provider, model })
     // Update chat messages to reflect the model change
-    const modelName = provider === "ollama" ? model : "Gemini 3 Pro"
-    setChatMessages((msgs) => [...msgs, { 
-      role: "gemini", 
-      text: `🔄 Switched to ${provider === "ollama" ? "🏠" : "☁️"} ${modelName}. Ready for your questions!` 
+    const modelName = provider === "ollama" ? model : "Gemini"
+    setChatMessages((msgs) => [...msgs, {
+      role: "gemini",
+      text: `Switched to ${provider === "ollama" ? "Ollama" : "Gemini"} ${modelName}. Ready for your questions!`
     }])
   }
 
@@ -256,11 +391,11 @@ const Queue: React.FC<QueueProps> = ({ setView }) => {
             <div className="flex-1 overflow-y-auto mb-3 p-3 rounded-lg bg-white/10 backdrop-blur-md max-h-64 min-h-[120px] glass-content border border-white/20 shadow-lg">
               {chatMessages.length === 0 ? (
                 <div className="text-sm text-gray-600 text-center mt-8">
-                  💬 Chat with {currentModel.provider === "ollama" ? "🏠" : "☁️"} {currentModel.model}
+                  Chat with {currentModel.provider === "ollama" ? "Ollama" : "Gemini"} {currentModel.model}
                   <br />
-                  <span className="text-xs text-gray-500">Take a screenshot (Cmd+H) for automatic analysis</span>
+                  <span className="text-xs text-gray-500">Take a screenshot (Cmd+H), then press Send to solve</span>
                   <br />
-                  <span className="text-xs text-gray-500">Click ⚙️ Models to switch AI providers</span>
+                  <span className="text-xs text-gray-500">Click Models to switch AI providers</span>
                 </div>
               ) : (
                 chatMessages.map((msg, idx) => (
@@ -276,7 +411,11 @@ const Queue: React.FC<QueueProps> = ({ setView }) => {
                       }`}
                       style={{ wordBreak: "break-word", lineHeight: "1.4" }}
                     >
-                      {msg.text}
+                      {msg.role === "gemini" ? (
+                        <ChatMarkdown content={msg.text} />
+                      ) : (
+                        <span className="whitespace-pre-wrap">{msg.text}</span>
+                      )}
                     </div>
                   </div>
                 ))
@@ -285,13 +424,29 @@ const Queue: React.FC<QueueProps> = ({ setView }) => {
                 <div className="flex justify-start mb-3">
                   <div className="bg-white/85 text-gray-600 px-3 py-1.5 rounded-xl text-xs backdrop-blur-sm border border-gray-200/50 shadow-md mr-12">
                     <span className="inline-flex items-center">
-                      <span className="animate-pulse text-gray-400">●</span>
-                      <span className="animate-pulse animation-delay-200 text-gray-400">●</span>
-                      <span className="animate-pulse animation-delay-400 text-gray-400">●</span>
+                      <span className="animate-pulse text-gray-400">.</span>
+                      <span className="animate-pulse animation-delay-200 text-gray-400">.</span>
+                      <span className="animate-pulse animation-delay-400 text-gray-400">.</span>
                       <span className="ml-2">{currentModel.model} is replying...</span>
                     </span>
                   </div>
                 </div>
+              )}
+            </div>
+            <div className="mb-2 flex items-center justify-between px-1 text-[11px] text-gray-600">
+              <label className="inline-flex items-center gap-1.5 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={attachLatestScreenshot}
+                  onChange={(e) => setAttachLatestScreenshot(e.target.checked)}
+                  className="h-3 w-3 rounded border-gray-300 text-gray-700 focus:ring-gray-500"
+                />
+                Attach latest screenshot
+              </label>
+              {attachLatestScreenshot && (
+                <span className={screenshots.length > 0 ? "text-gray-600" : "text-red-500"}>
+                  {screenshots.length > 0 ? "ready" : "no screenshot available"}
+                </span>
               )}
             </div>
             <form
@@ -304,7 +459,7 @@ const Queue: React.FC<QueueProps> = ({ setView }) => {
               <input
                 ref={chatInputRef}
                 className="flex-1 rounded-lg px-3 py-2 bg-white/25 backdrop-blur-md text-gray-800 placeholder-gray-500 text-xs focus:outline-none focus:ring-1 focus:ring-gray-400/60 border border-white/40 shadow-lg transition-all duration-200"
-                placeholder="Type your message..."
+                placeholder={attachLatestScreenshot ? "Add instruction (optional) and send..." : "Type your message..."}
                 value={chatInput}
                 onChange={e => setChatInput(e.target.value)}
                 disabled={chatLoading}
@@ -312,7 +467,10 @@ const Queue: React.FC<QueueProps> = ({ setView }) => {
               <button
                 type="submit"
                 className="p-2 rounded-lg bg-gray-600/80 hover:bg-gray-700/80 border border-gray-500/60 flex items-center justify-center transition-all duration-200 backdrop-blur-sm shadow-lg disabled:opacity-50"
-                disabled={chatLoading || !chatInput.trim()}
+                disabled={
+                  chatLoading ||
+                  (!chatInput.trim() && !(attachLatestScreenshot && screenshots.length > 0))
+                }
                 tabIndex={-1}
                 aria-label="Send"
               >

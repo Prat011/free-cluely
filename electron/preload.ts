@@ -32,7 +32,8 @@ interface ElectronAPI {
   moveWindowDown: () => Promise<void>
   analyzeAudioFromBase64: (data: string, mimeType: string) => Promise<{ text: string; timestamp: number }>
   analyzeAudioFile: (path: string) => Promise<{ text: string; timestamp: number }>
-  analyzeImageFile: (path: string) => Promise<void>
+  analyzeImageFile: (path: string) => Promise<{ text: string; timestamp: number }>
+  chatWithImage: (message: string, imagePath: string) => Promise<string>
   quitApp: () => Promise<void>
   
   // LLM Model Management
@@ -178,6 +179,7 @@ contextBridge.exposeInMainWorld("electronAPI", {
   analyzeAudioFromBase64: (data: string, mimeType: string) => ipcRenderer.invoke("analyze-audio-base64", data, mimeType),
   analyzeAudioFile: (path: string) => ipcRenderer.invoke("analyze-audio-file", path),
   analyzeImageFile: (path: string) => ipcRenderer.invoke("analyze-image-file", path),
+  chatWithImage: (message: string, imagePath: string) => ipcRenderer.invoke("gemini-chat-with-image", message, imagePath),
   quitApp: () => ipcRenderer.invoke("quit-app"),
   
   // LLM Model Management

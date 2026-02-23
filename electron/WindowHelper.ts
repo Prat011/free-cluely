@@ -15,6 +15,7 @@ export class WindowHelper {
   private windowPosition: { x: number; y: number } | null = null
   private windowSize: { width: number; height: number } | null = null
   private appState: AppState
+  private hasLoggedMacCaptureWarning: boolean = false
 
   // Initialize with explicit number type and 0 value
   private screenWidth: number = 0
@@ -25,6 +26,24 @@ export class WindowHelper {
 
   constructor(appState: AppState) {
     this.appState = appState
+  }
+
+  private applyCaptureProtection(context: string): void {
+    if (!this.mainWindow || this.mainWindow.isDestroyed()) return
+
+    this.mainWindow.setContentProtection(true)
+    const protectedNow = (this.mainWindow as any).isContentProtected?.()
+    if (protectedNow === false) {
+      console.warn(`[WindowHelper] Content protection could not be enabled (${context}).`)
+      return
+    }
+
+    if (process.platform === "darwin" && !this.hasLoggedMacCaptureWarning) {
+      console.warn(
+        "[WindowHelper] Content protection is enabled. Note: Some macOS apps using ScreenCaptureKit may still capture visible windows."
+      )
+      this.hasLoggedMacCaptureWarning = true
+    }
   }
 
   public setWindowDimensions(width: number, height: number): void {
@@ -99,7 +118,7 @@ export class WindowHelper {
 
     this.mainWindow = new BrowserWindow(windowSettings)
     // this.mainWindow.webContents.openDevTools()
-    this.mainWindow.setContentProtection(true)
+    this.applyCaptureProtection("createWindow")
 
     if (process.platform === "darwin") {
       this.mainWindow.setVisibleOnAllWorkspaces(true, {
@@ -128,6 +147,7 @@ export class WindowHelper {
       if (this.mainWindow) {
         // Center the window first
         this.centerWindow()
+        this.applyCaptureProtection("ready-to-show")
         this.mainWindow.show()
         this.mainWindow.focus()
         this.mainWindow.setAlwaysOnTop(true)
@@ -162,6 +182,10 @@ export class WindowHelper {
         const bounds = this.mainWindow.getBounds()
         this.windowSize = { width: bounds.width, height: bounds.height }
       }
+    })
+
+    this.mainWindow.on("show", () => {
+      this.applyCaptureProtection("show-event")
     })
 
     this.mainWindow.on("closed", () => {
@@ -209,6 +233,7 @@ export class WindowHelper {
     }
 
     this.mainWindow.showInactive()
+    this.applyCaptureProtection("showMainWindow")
 
     this.isWindowVisible = true
   }
@@ -260,6 +285,7 @@ export class WindowHelper {
     }
 
     this.centerWindow()
+    this.applyCaptureProtection("centerAndShowWindow")
     this.mainWindow.show()
     this.mainWindow.focus()
     this.mainWindow.setAlwaysOnTop(true)
