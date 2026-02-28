@@ -185,7 +185,7 @@ export class AppState {
   public createTray(): void {
     // Create a simple tray icon
     const image = nativeImage.createEmpty()
-    
+
     // Try to use a system template image for better integration
     let trayImage = image
     try {
@@ -195,9 +195,9 @@ export class AppState {
       console.log("Using empty tray image")
       trayImage = nativeImage.createEmpty()
     }
-    
+
     this.tray = new Tray(trayImage)
-    
+
     const contextMenu = Menu.buildFromTemplate([
       {
         label: 'Show Interview Coder',
@@ -243,15 +243,15 @@ export class AppState {
         }
       }
     ])
-    
+
     this.tray.setToolTip('Interview Coder - Press Cmd+Shift+Space to show')
     this.tray.setContextMenu(contextMenu)
-    
+
     // Set a title for macOS (will appear in menu bar)
     if (process.platform === 'darwin') {
       this.tray.setTitle('IC')
     }
-    
+
     // Double-click to show window
     this.tray.on('double-click', () => {
       this.centerAndShowWindow()
@@ -271,11 +271,12 @@ export class AppState {
 async function initializeApp() {
   const appState = AppState.getInstance()
 
-  // Initialize IPC handlers before window creation
-  initializeIpcHandlers(appState)
-
   app.whenReady().then(() => {
     console.log("App is ready")
+
+    // Initialize IPC handlers after app is ready
+    initializeIpcHandlers(appState)
+
     appState.createWindow()
     appState.createTray()
     // Register global shortcuts using ShortcutsHelper

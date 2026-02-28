@@ -11,15 +11,18 @@ export class ScreenshotHelper {
   private extraScreenshotQueue: string[] = []
   private readonly MAX_SCREENSHOTS = 5
 
-  private readonly screenshotDir: string
-  private readonly extraScreenshotDir: string
+  private screenshotDir: string = ""
+  private extraScreenshotDir: string = ""
+  private dirsInitialized: boolean = false
 
   private view: "queue" | "solutions" = "queue"
 
   constructor(view: "queue" | "solutions" = "queue") {
     this.view = view
+  }
 
-    // Initialize directories
+  private ensureDirs(): void {
+    if (this.dirsInitialized) return
     this.screenshotDir = path.join(app.getPath("userData"), "screenshots")
     this.extraScreenshotDir = path.join(
       app.getPath("userData"),
@@ -33,6 +36,7 @@ export class ScreenshotHelper {
     if (!fs.existsSync(this.extraScreenshotDir)) {
       fs.mkdirSync(this.extraScreenshotDir)
     }
+    this.dirsInitialized = true
   }
 
   public getView(): "queue" | "solutions" {
@@ -78,12 +82,13 @@ export class ScreenshotHelper {
     hideMainWindow: () => void,
     showMainWindow: () => void
   ): Promise<string> {
+    this.ensureDirs()
     try {
       hideMainWindow()
-      
+
       // Add a small delay to ensure window is hidden
       await new Promise(resolve => setTimeout(resolve, 100))
-      
+
       let screenshotPath = ""
 
       if (this.view === "queue") {

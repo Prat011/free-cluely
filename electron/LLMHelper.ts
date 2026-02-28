@@ -15,17 +15,17 @@ export class LLMHelper {
 
   constructor(apiKey?: string, useOllama: boolean = false, ollamaModel?: string, ollamaUrl?: string) {
     this.useOllama = useOllama
-    
+
     if (useOllama) {
       this.ollamaUrl = ollamaUrl || "http://localhost:11434"
       this.ollamaModel = ollamaModel || "gemma:latest" // Default fallback
       console.log(`[LLMHelper] Using Ollama with model: ${this.ollamaModel}`)
-      
+
       // Auto-detect and use first available model if specified model doesn't exist
       this.initializeOllamaModel()
     } else if (apiKey) {
       const genAI = new GoogleGenerativeAI(apiKey)
-      this.model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" })
+      this.model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" })
       console.log("[LLMHelper] Using Google Gemini")
     } else {
       throw new Error("Either provide Gemini API key or enable Ollama mode")
@@ -124,7 +124,7 @@ export class LLMHelper {
   public async extractProblemFromImages(imagePaths: string[]) {
     try {
       const imageParts = await Promise.all(imagePaths.map(path => this.fileToGenerativePart(path)))
-      
+
       const prompt = `${this.systemPrompt}\n\nYou are a wingman. Please analyze these images and extract the following information in JSON format:\n{
   "problem_statement": "A clear statement of the problem or situation depicted in the images.",
   "context": "Relevant background or context from the images.",
@@ -171,7 +171,7 @@ export class LLMHelper {
   public async debugSolutionWithImages(problemInfo: any, currentCode: string, debugImagePaths: string[]) {
     try {
       const imageParts = await Promise.all(debugImagePaths.map(path => this.fileToGenerativePart(path)))
-      
+
       const prompt = `${this.systemPrompt}\n\nYou are a wingman. Given:\n1. The original problem or situation: ${JSON.stringify(problemInfo, null, 2)}\n2. The current response or approach: ${currentCode}\n3. The debug information in the provided images\n\nPlease analyze the debug information and provide feedback in this JSON format:\n{
   "solution": {
     "code": "The code or main answer here.",
@@ -203,7 +203,7 @@ export class LLMHelper {
           mimeType: "audio/mp3"
         }
       };
-      const prompt = `${this.systemPrompt}\n\nDescribe this audio clip in a short, concise answer. In addition to your main answer, suggest several possible actions or responses the user could take next based on the audio. Do not return a structured JSON object, just answer naturally as you would to a user.`;
+      const prompt = `${this.systemPrompt}\n\nThe provided audio clip contains a question or a problem statement. Please act as a solver and provide the direct answer or solution to whatever is being asked in the audio. Do not return a structured JSON object, just answer naturally as you would to a user, and format your answer clearly with markdown.`;
       const result = await this.model.generateContent([prompt, audioPart]);
       const response = await result.response;
       const text = response.text();
@@ -222,7 +222,7 @@ export class LLMHelper {
           mimeType
         }
       };
-      const prompt = `${this.systemPrompt}\n\nDescribe this audio clip in a short, concise answer. In addition to your main answer, suggest several possible actions or responses the user could take next based on the audio. Do not return a structured JSON object, just answer naturally as you would to a user and be concise.`;
+      const prompt = `${this.systemPrompt}\n\nThe provided audio clip contains a question or a problem statement. Please act as a solver and provide the direct answer or solution to whatever is being asked in the audio. Do not return a structured JSON object, just answer naturally as you would to a user, and format your answer clearly with markdown.`;
       const result = await this.model.generateContent([prompt, audioPart]);
       const response = await result.response;
       const text = response.text();
@@ -280,11 +280,11 @@ export class LLMHelper {
 
   public async getOllamaModels(): Promise<string[]> {
     if (!this.useOllama) return [];
-    
+
     try {
       const response = await fetch(`${this.ollamaUrl}/api/tags`);
       if (!response.ok) throw new Error('Failed to fetch models');
-      
+
       const data = await response.json();
       return data.models?.map((model: any) => model.name) || [];
     } catch (error) {
@@ -298,33 +298,33 @@ export class LLMHelper {
   }
 
   public getCurrentModel(): string {
-    return this.useOllama ? this.ollamaModel : "gemini-2.0-flash";
+    return this.useOllama ? this.ollamaModel : "gemini-2.5-flash"
   }
 
   public async switchToOllama(model?: string, url?: string): Promise<void> {
     this.useOllama = true;
     if (url) this.ollamaUrl = url;
-    
+
     if (model) {
       this.ollamaModel = model;
     } else {
       // Auto-detect first available model
       await this.initializeOllamaModel();
     }
-    
+
     console.log(`[LLMHelper] Switched to Ollama: ${this.ollamaModel} at ${this.ollamaUrl}`);
   }
 
   public async switchToGemini(apiKey?: string): Promise<void> {
     if (apiKey) {
       const genAI = new GoogleGenerativeAI(apiKey);
-      this.model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+      this.model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
     }
-    
+
     if (!this.model && !apiKey) {
       throw new Error("No Gemini API key provided and no existing model instance");
     }
-    
+
     this.useOllama = false;
     console.log("[LLMHelper] Switched to Gemini");
   }

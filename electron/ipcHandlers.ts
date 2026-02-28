@@ -196,4 +196,19 @@ export function initializeIpcHandlers(appState: AppState): void {
       return { success: false, error: error.message };
     }
   });
+
+  // Desktop capturer for system audio recording
+  ipcMain.handle("get-desktop-sources", async () => {
+    try {
+      const { desktopCapturer } = require("electron")
+      const sources = await desktopCapturer.getSources({ types: ['screen'] });
+      return sources.map((source: any) => ({
+        id: source.id,
+        name: source.name
+      }));
+    } catch (error: any) {
+      console.error("Error getting desktop sources:", error);
+      return [];
+    }
+  });
 }

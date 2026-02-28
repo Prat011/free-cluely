@@ -32,7 +32,7 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ onModelChange, onChatOpen
       const config = await window.electronAPI.getCurrentLlmConfig();
       setCurrentConfig(config);
       setSelectedProvider(config.provider);
-      
+
       if (config.isOllama) {
         setSelectedOllamaModel(config.model);
         await loadOllamaModels();
@@ -48,7 +48,7 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ onModelChange, onChatOpen
     try {
       const models = await window.electronAPI.getAvailableOllamaModels();
       setAvailableOllamaModels(models);
-      
+
       // Auto-select first model if none selected
       if (models.length > 0 && !selectedOllamaModel) {
         setSelectedOllamaModel(models[0]);
@@ -77,7 +77,7 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ onModelChange, onChatOpen
     try {
       setConnectionStatus('testing');
       let result;
-      
+
       if (selectedProvider === 'ollama') {
         result = await window.electronAPI.switchToOllama(selectedOllamaModel, ollamaUrl);
       } else {
@@ -87,7 +87,7 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ onModelChange, onChatOpen
       if (result.success) {
         await loadCurrentConfig();
         setConnectionStatus('success');
-        onModelChange?.(selectedProvider, selectedProvider === 'ollama' ? selectedOllamaModel : 'gemini-2.0-flash');
+        onModelChange?.(selectedProvider, selectedProvider === 'ollama' ? selectedOllamaModel : 'gemini-2.5-flash-preview-05-20');
         // Auto-open chat window after successful model change
         setTimeout(() => {
           onChatOpen?.();
@@ -150,21 +150,19 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ onModelChange, onChatOpen
         <div className="flex gap-2">
           <button
             onClick={() => setSelectedProvider('gemini')}
-            className={`flex-1 px-3 py-2 rounded text-xs transition-all ${
-              selectedProvider === 'gemini'
+            className={`flex-1 px-3 py-2 rounded text-xs transition-all ${selectedProvider === 'gemini'
                 ? 'bg-blue-500 text-white shadow-md'
                 : 'bg-white/40 text-gray-700 hover:bg-white/60'
-            }`}
+              }`}
           >
             ☁️ Gemini (Cloud)
           </button>
           <button
             onClick={() => setSelectedProvider('ollama')}
-            className={`flex-1 px-3 py-2 rounded text-xs transition-all ${
-              selectedProvider === 'ollama'
+            className={`flex-1 px-3 py-2 rounded text-xs transition-all ${selectedProvider === 'ollama'
                 ? 'bg-green-500 text-white shadow-md'
                 : 'bg-white/40 text-gray-700 hover:bg-white/60'
-            }`}
+              }`}
           >
             🏠 Ollama (Local)
           </button>
@@ -194,7 +192,7 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ onModelChange, onChatOpen
               className="w-full px-3 py-2 text-xs bg-white/40 border border-white/60 rounded focus:outline-none focus:ring-2 focus:ring-green-400/60"
             />
           </div>
-          
+
           <div>
             <div className="flex items-center gap-2">
               <label className="text-xs font-medium text-gray-700">Model</label>
@@ -206,7 +204,7 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ onModelChange, onChatOpen
                 🔄
               </button>
             </div>
-            
+
             {availableOllamaModels.length > 0 ? (
               <select
                 value={selectedOllamaModel}
@@ -237,7 +235,7 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ onModelChange, onChatOpen
         >
           {connectionStatus === 'testing' ? 'Switching...' : 'Apply Changes'}
         </button>
-        
+
         <button
           onClick={testConnection}
           disabled={connectionStatus === 'testing'}

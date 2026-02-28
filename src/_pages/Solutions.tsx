@@ -17,6 +17,42 @@ import { AudioResult } from "../types/audio"
 import SolutionCommands from "../components/Solutions/SolutionCommands"
 import Debug from "./Debug"
 
+// Simple markdown to HTML converter (no external dependency needed)
+function simpleMarkdown(text: string): string {
+  if (!text) return "";
+  let html = text
+    // Escape HTML
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    // Headers
+    .replace(/^### (.+)$/gm, "<strong>$1</strong>")
+    .replace(/^## (.+)$/gm, "<strong style='font-size:1.1em'>$1</strong>")
+    .replace(/^# (.+)$/gm, "<strong style='font-size:1.2em'>$1</strong>")
+    // Bold and italic
+    .replace(/\*\*\*(.+?)\*\*\*/g, "<strong><em>$1</em></strong>")
+    .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+    .replace(/\*(.+?)\*/g, "<em>$1</em>")
+    // Inline code
+    .replace(/`([^`]+)`/g, "<code style='background:rgba(255,255,255,0.1);padding:1px 4px;border-radius:3px;font-size:0.9em'>$1</code>")
+    // Bullet points
+    .replace(/^\* (.+)$/gm, "• $1")
+    .replace(/^- (.+)$/gm, "• $1")
+    // Numbered lists
+    .replace(/^\d+\. (.+)$/gm, "  $1")
+    // Line breaks
+    .replace(/\n/g, "<br/>")
+  return html;
+}
+
+// Helper to render content with markdown if it's a string
+function renderContent(content: React.ReactNode): React.ReactNode {
+  if (typeof content === "string") {
+    return <span dangerouslySetInnerHTML={{ __html: simpleMarkdown(content) }} />;
+  }
+  return content;
+}
+
 // (Using global ElectronAPI type from src/types/electron.d.ts)
 
 export const ContentSection = ({
@@ -40,7 +76,7 @@ export const ContentSection = ({
       </div>
     ) : (
       <div className="text-[13px] leading-[1.4] text-gray-100 max-w-[600px]">
-        {content}
+        {renderContent(content)}
       </div>
     )}
   </div>
@@ -493,7 +529,7 @@ const Solutions: React.FC<SolutionsProps> = ({ setView }) => {
                 {problemStatementData?.validation_type === "manual" ? (
                   <ContentSection
                     title={problemStatementData?.output_format?.subtype === "voice" ? "Audio Result" : "Screenshot Result"}
-                    content={problemStatementData.problem_statement}
+                    content={renderContent(problemStatementData.problem_statement)}
                     isLoading={false}
                   />
                 ) : (
@@ -508,8 +544,8 @@ const Solutions: React.FC<SolutionsProps> = ({ setView }) => {
                     {problemStatementData && !solutionData && (
                       <div className="mt-4 flex">
                         <p className="text-xs bg-gradient-to-r from-gray-300 via-gray-100 to-gray-300 bg-clip-text text-transparent animate-pulse">
-                          {problemStatementData?.output_format?.subtype === "voice" 
-                            ? "Processing voice input..." 
+                          {problemStatementData?.output_format?.subtype === "voice"
+                            ? "Processing voice input..."
                             : "Generating solutions..."}
                         </p>
                       </div>

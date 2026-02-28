@@ -34,14 +34,18 @@ interface ElectronAPI {
   analyzeAudioFile: (path: string) => Promise<{ text: string; timestamp: number }>
   analyzeImageFile: (path: string) => Promise<void>
   quitApp: () => Promise<void>
-  
+
+  // System audio capture
+  getDesktopSources: () => Promise<Array<{ id: string; name: string }>>
+  onToggleRecording: (callback: () => void) => () => void
+
   // LLM Model Management
   getCurrentLlmConfig: () => Promise<{ provider: "ollama" | "gemini"; model: string; isOllama: boolean }>
   getAvailableOllamaModels: () => Promise<string[]>
   switchToOllama: (model?: string, url?: string) => Promise<{ success: boolean; error?: string }>
   switchToGemini: (apiKey?: string) => Promise<{ success: boolean; error?: string }>
   testLlmConnection: () => Promise<{ success: boolean; error?: string }>
-  
+
   invoke: (channel: string, ...args: any[]) => Promise<any>
 }
 
@@ -179,13 +183,23 @@ contextBridge.exposeInMainWorld("electronAPI", {
   analyzeAudioFile: (path: string) => ipcRenderer.invoke("analyze-audio-file", path),
   analyzeImageFile: (path: string) => ipcRenderer.invoke("analyze-image-file", path),
   quitApp: () => ipcRenderer.invoke("quit-app"),
-  
+
+  // System audio capture
+  getDesktopSources: () => ipcRenderer.invoke("get-desktop-sources"),
+  onToggleRecording: (callback: () => void) => {
+    const subscription = () => callback()
+    ipcRenderer.on("toggle-recording", subscription)
+    return () => {
+      ipcRenderer.removeListener("toggle-recording", subscription)
+    }
+  },
+
   // LLM Model Management
   getCurrentLlmConfig: () => ipcRenderer.invoke("get-current-llm-config"),
   getAvailableOllamaModels: () => ipcRenderer.invoke("get-available-ollama-models"),
   switchToOllama: (model?: string, url?: string) => ipcRenderer.invoke("switch-to-ollama", model, url),
   switchToGemini: (apiKey?: string) => ipcRenderer.invoke("switch-to-gemini", apiKey),
   testLlmConnection: () => ipcRenderer.invoke("test-llm-connection"),
-  
+
   invoke: (channel: string, ...args: any[]) => ipcRenderer.invoke(channel, ...args)
 } as ElectronAPI)

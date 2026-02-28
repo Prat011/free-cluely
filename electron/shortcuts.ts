@@ -78,6 +78,14 @@ export class ShortcutsHelper {
       this.appState.moveWindowUp()
     })
 
+    globalShortcut.register("CommandOrControl+Shift+R", () => {
+      console.log("Command/Ctrl + Shift + R pressed. Toggling voice recording...")
+      const mainWindow = this.appState.getMainWindow()
+      if (mainWindow && !mainWindow.isDestroyed()) {
+        mainWindow.webContents.send("toggle-recording")
+      }
+    })
+
     globalShortcut.register("CommandOrControl+B", () => {
       this.appState.toggleMainWindow()
       // If window exists and we're showing it, bring it to front

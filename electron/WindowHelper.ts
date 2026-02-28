@@ -72,7 +72,7 @@ export class WindowHelper {
     this.screenWidth = workArea.width
     this.screenHeight = workArea.height
 
-    
+
     const windowSettings: Electron.BrowserWindowConstructorOptions = {
       width: 400,
       height: 600,
@@ -93,13 +93,30 @@ export class WindowHelper {
       focusable: true,
       resizable: true,
       movable: true,
+      skipTaskbar: true,
+      // 'toolbar' type uses WS_EX_TOOLWINDOW on Windows - hides from Alt+Tab and screen share pickers
+      type: 'toolbar',
+      title: " ",
       x: 100, // Start at a visible position
       y: 100
     }
 
     this.mainWindow = new BrowserWindow(windowSettings)
     // this.mainWindow.webContents.openDevTools()
+
+    // === STEALTH MODE SETUP ===
+    // 1. Set opacity first (workaround for setContentProtection on some Windows versions)
+    this.mainWindow.setOpacity(1.0)
+    // 2. Prevent capture by screen sharing / recording / screenshots
+    //    On Win10 2004+ this uses WDA_EXCLUDEFROMCAPTURE (window completely invisible to capture)
+    //    On older Win10 it uses WDA_MONITOR (shows black rectangle)
     this.mainWindow.setContentProtection(true)
+    // 3. Hide from taskbar
+    this.mainWindow.setSkipTaskbar(true)
+    // 4. Set innocuous / blank title so it doesn't appear suspicious in Alt+Tab or task manager
+    this.mainWindow.setTitle(" ")
+    // 5. Remove menu bar
+    this.mainWindow.removeMenu()
 
     if (process.platform === "darwin") {
       this.mainWindow.setVisibleOnAllWorkspaces(true, {
@@ -115,9 +132,8 @@ export class WindowHelper {
       }
       // Keep window focusable on Linux for proper interaction
       this.mainWindow.setFocusable(true)
-    } 
-    this.mainWindow.setSkipTaskbar(true)
-    this.mainWindow.setAlwaysOnTop(true)
+    }
+    this.mainWindow.setAlwaysOnTop(true, "screen-saver")
 
     this.mainWindow.loadURL(startUrl).catch((err) => {
       console.error("Failed to load URL:", err)
@@ -128,9 +144,10 @@ export class WindowHelper {
       if (this.mainWindow) {
         // Center the window first
         this.centerWindow()
-        this.mainWindow.show()
-        this.mainWindow.focus()
-        this.mainWindow.setAlwaysOnTop(true)
+        this.mainWindow.showInactive() // showInactive instead of show to avoid stealing focus
+        this.mainWindow.setAlwaysOnTop(true, "screen-saver")
+        // Re-apply content protection after show (some Windows versions need this)
+        this.mainWindow.setContentProtection(true)
         console.log("Window is now visible and centered")
       }
     })
@@ -143,6 +160,20 @@ export class WindowHelper {
 
     this.setupWindowListeners()
     this.isWindowVisible = true
+
+    // === AGGRESSIVE STEALTH ENFORCEMENT ===
+    // Some Windows versions or apps (like Zoom) may attempt to reset window flags when 
+    // display contexts change (e.g. during heavy React renders or screen share init).
+    // We run an interval to continually reinforce the stealth flags.
+    setInterval(() => {
+      if (this.mainWindow && !this.mainWindow.isDestroyed()) {
+        this.mainWindow.setContentProtection(true)
+        // Also ensure it stays above screen-share UI bars if it's currently meant to be visible
+        if (this.isWindowVisible) {
+          this.mainWindow.setAlwaysOnTop(true, "screen-saver")
+        }
+      }
+    }, 10)
   }
 
   private setupWindowListeners(): void {
@@ -228,16 +259,16 @@ export class WindowHelper {
 
     const primaryDisplay = screen.getPrimaryDisplay()
     const workArea = primaryDisplay.workAreaSize
-    
+
     // Get current window size or use defaults
     const windowBounds = this.mainWindow.getBounds()
     const windowWidth = windowBounds.width || 400
     const windowHeight = windowBounds.height || 600
-    
+
     // Calculate center position
     const centerX = Math.floor((workArea.width - windowWidth) / 2)
     const centerY = Math.floor((workArea.height - windowHeight) / 2)
-    
+
     // Set window position
     this.mainWindow.setBounds({
       x: centerX,
@@ -245,7 +276,7 @@ export class WindowHelper {
       width: windowWidth,
       height: windowHeight
     })
-    
+
     // Update internal state
     this.windowPosition = { x: centerX, y: centerY }
     this.windowSize = { width: windowWidth, height: windowHeight }
@@ -260,11 +291,12 @@ export class WindowHelper {
     }
 
     this.centerWindow()
-    this.mainWindow.show()
-    this.mainWindow.focus()
-    this.mainWindow.setAlwaysOnTop(true)
+    this.mainWindow.showInactive() // Use showInactive to avoid stealing focus
+    this.mainWindow.setAlwaysOnTop(true, "screen-saver")
+    // Re-apply content protection after showing
+    this.mainWindow.setContentProtection(true)
     this.isWindowVisible = true
-    
+
     console.log(`Window centered and shown`)
   }
 

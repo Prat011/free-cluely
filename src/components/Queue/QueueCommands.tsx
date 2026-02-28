@@ -2,6 +2,34 @@ import React, { useState, useEffect, useRef } from "react"
 import { IoLogOutOutline } from "react-icons/io5"
 import { Dialog, DialogContent, DialogClose } from "../ui/dialog"
 
+// Simple markdown to HTML converter
+function simpleMarkdown(text: string): string {
+  if (!text) return "";
+  let html = text
+    // Escape HTML
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    // Headers
+    .replace(/^### (.+)$/gm, "<strong>$1</strong>")
+    .replace(/^## (.+)$/gm, "<strong style='font-size:1.1em'>$1</strong>")
+    .replace(/^# (.+)$/gm, "<strong style='font-size:1.2em'>$1</strong>")
+    // Bold and italic
+    .replace(/\*\*\*(.+?)\*\*\*/g, "<strong><em>$1</em></strong>")
+    .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+    .replace(/\*(.+?)\*/g, "<em>$1</em>")
+    // Inline code
+    .replace(/`([^`]+)`/g, "<code style='background:rgba(255,255,255,0.1);padding:1px 4px;border-radius:3px;font-size:0.9em'>$1</code>")
+    // Bullet points
+    .replace(/^\* (.+)$/gm, "• $1")
+    .replace(/^- (.+)$/gm, "• $1")
+    // Numbered lists
+    .replace(/^\d+\. (.+)$/gm, "  $1")
+    // Line breaks
+    .replace(/\n/g, "<br/>")
+  return html;
+}
+
 interface QueueCommandsProps {
   onTooltipVisibilityChange: (visible: boolean, height: number) => void
   screenshots: Array<{ path: string; preview: string }>
@@ -39,20 +67,79 @@ const QueueCommands: React.FC<QueueCommandsProps> = ({
     setIsTooltipVisible(false)
   }
 
-  const handleRecordClick = async () => {
+  // Shared recording toggle function (used by both button and shortcut)
+  const toggleRecording = async () => {
     if (!isRecording) {
-      // Start recording
+      // Start recording - capture system audio + mic
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
-        const recorder = new MediaRecorder(stream)
+        let combinedStream: MediaStream
+
+        try {
+          // Get desktop sources for system audio capture
+          const sources = await window.electronAPI.getDesktopSources()
+          if (sources.length === 0) throw new Error("No desktop sources available")
+
+          // Capture system audio via desktopCapturer (includes meeting audio)
+          const systemStream = await navigator.mediaDevices.getUserMedia({
+            audio: {
+              mandatory: {
+                chromeMediaSource: 'desktop',
+              }
+            } as any,
+            video: {
+              mandatory: {
+                chromeMediaSource: 'desktop',
+                chromeMediaSourceId: sources[0].id,
+                maxWidth: 1,
+                maxHeight: 1,
+                maxFrameRate: 1,
+              }
+            } as any,
+          })
+
+          // Remove the dummy video track (we only need audio)
+          systemStream.getVideoTracks().forEach(track => track.stop())
+
+          // Also capture mic audio
+          let micStream: MediaStream | null = null
+          try {
+            micStream = await navigator.mediaDevices.getUserMedia({ audio: true })
+          } catch {
+            console.log("Mic not available, using system audio only")
+          }
+
+          // Merge system audio + mic into one stream
+          const audioContext = new AudioContext()
+          const destination = audioContext.createMediaStreamDestination()
+
+          const systemSource = audioContext.createMediaStreamSource(systemStream)
+          systemSource.connect(destination)
+
+          if (micStream) {
+            const micSource = audioContext.createMediaStreamSource(micStream)
+            micSource.connect(destination)
+          }
+
+          combinedStream = destination.stream
+        } catch (err) {
+          console.log("System audio capture failed, falling back to mic-only:", err)
+          // Fallback to mic-only recording
+          combinedStream = await navigator.mediaDevices.getUserMedia({ audio: true })
+        }
+
+        const recorder = new MediaRecorder(combinedStream)
         recorder.ondataavailable = (e) => chunks.current.push(e.data)
         recorder.onstop = async () => {
           const blob = new Blob(chunks.current, { type: chunks.current[0]?.type || 'audio/webm' })
           chunks.current = []
+          // Stop all tracks to release resources
+          combinedStream.getTracks().forEach(track => track.stop())
+
           const reader = new FileReader()
           reader.onloadend = async () => {
             const base64Data = (reader.result as string).split(',')[1]
             try {
+              setAudioResult('⏳ Analyzing audio...')
               const result = await window.electronAPI.analyzeAudioFromBase64(base64Data, blob.type)
               setAudioResult(result.text)
             } catch (err) {
@@ -68,12 +155,20 @@ const QueueCommands: React.FC<QueueCommandsProps> = ({
         setAudioResult('Could not start recording.')
       }
     } else {
-      // Stop recording
+      // Stop recording - auto-triggers analysis via recorder.onstop
       mediaRecorder?.stop()
       setIsRecording(false)
       setMediaRecorder(null)
     }
   }
+
+  // Listen for Ctrl+Shift+R shortcut from main process
+  useEffect(() => {
+    const cleanup = window.electronAPI.onToggleRecording(() => {
+      toggleRecording()
+    })
+    return cleanup
+  })
 
   // Remove handleChatSend function
 
@@ -115,8 +210,9 @@ const QueueCommands: React.FC<QueueCommandsProps> = ({
         <div className="flex items-center gap-2">
           <button
             className={`bg-white/10 hover:bg-white/20 transition-colors rounded-md px-2 py-1 text-[11px] leading-none text-white/70 flex items-center gap-1 ${isRecording ? 'bg-red-500/70 hover:bg-red-500/90' : ''}`}
-            onClick={handleRecordClick}
+            onClick={toggleRecording}
             type="button"
+            title="Toggle recording (Ctrl+Shift+R)"
           >
             {isRecording ? (
               <span className="animate-pulse">● Stop Recording</span>
@@ -246,8 +342,9 @@ const QueueCommands: React.FC<QueueCommandsProps> = ({
       </div>
       {/* Audio Result Display */}
       {audioResult && (
-        <div className="mt-2 p-2 bg-white/10 rounded text-white text-xs max-w-md">
-          <span className="font-semibold">Audio Result:</span> {audioResult}
+        <div className="mt-2 p-2 bg-white/10 rounded text-white text-xs max-w-md" style={{ wordBreak: 'break-word', whiteSpace: 'pre-wrap' }}>
+          <span className="font-semibold block mb-1">Audio Result:</span>
+          <span dangerouslySetInnerHTML={{ __html: simpleMarkdown(audioResult) }} />
         </div>
       )}
       {/* Chat Dialog Overlay */}
