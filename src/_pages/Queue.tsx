@@ -11,6 +11,34 @@ import {
 import QueueCommands from "../components/Queue/QueueCommands"
 import ModelSelector from "../components/ui/ModelSelector"
 
+// Simple markdown to HTML converter (no external dependency needed)
+function simpleMarkdown(text: string): string {
+  if (!text) return "";
+  let html = text
+    // Escape HTML
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    // Headers
+    .replace(/^### (.+)$/gm, "<strong>$1</strong>")
+    .replace(/^## (.+)$/gm, "<strong style='font-size:1.1em'>$1</strong>")
+    .replace(/^# (.+)$/gm, "<strong style='font-size:1.2em'>$1</strong>")
+    // Bold and italic
+    .replace(/\*\*\*(.+?)\*\*\*/g, "<strong><em>$1</em></strong>")
+    .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+    .replace(/\*(.+?)\*/g, "<em>$1</em>")
+    // Inline code
+    .replace(/`([^`]+)`/g, "<code style='background:rgba(0,0,0,0.1);padding:1px 4px;border-radius:3px;font-size:0.9em'>$1</code>")
+    // Bullet points
+    .replace(/^\* (.+)$/gm, "• $1")
+    .replace(/^- (.+)$/gm, "• $1")
+    // Numbered lists
+    .replace(/^\d+\. (.+)$/gm, "  $1")
+    // Line breaks
+    .replace(/\n/g, "<br/>")
+  return html;
+}
+
 interface QueueProps {
   setView: React.Dispatch<React.SetStateAction<"queue" | "solutions" | "debug">>
 }
@@ -276,7 +304,11 @@ const Queue: React.FC<QueueProps> = ({ setView }) => {
                       }`}
                       style={{ wordBreak: "break-word", lineHeight: "1.4" }}
                     >
-                      {msg.text}
+                      {msg.role === "user" ? (
+                        msg.text
+                      ) : (
+                        <span dangerouslySetInnerHTML={{ __html: simpleMarkdown(msg.text) }} />
+                      )}
                     </div>
                   </div>
                 ))
