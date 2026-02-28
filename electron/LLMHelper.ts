@@ -18,7 +18,7 @@ export class LLMHelper {
     
     if (useOllama) {
       this.ollamaUrl = ollamaUrl || "http://localhost:11434"
-      this.ollamaModel = ollamaModel || "gemma:latest" // Default fallback
+      this.ollamaModel = ollamaModel || "llava:latest" // Default fallback (vision-capable)
       console.log(`[LLMHelper] Using Ollama with model: ${this.ollamaModel}`)
       
       // Auto-detect and use first available model if specified model doesn't exist
@@ -44,28 +44,62 @@ export class LLMHelper {
 
   private cleanJsonResponse(text: string): string {
     // Remove markdown code block syntax if present
-    text = text.replace(/^```(?:json)?\n/, '').replace(/\n```$/, '');
+    text = text.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '');
     // Remove any leading/trailing whitespace
     text = text.trim();
     return text;
   }
 
-  private async callOllama(prompt: string): Promise<string> {
+  private parseJsonSafe(text: string): any {
+    const cleaned = this.cleanJsonResponse(text)
+    // Try direct parse first
     try {
+      return JSON.parse(cleaned)
+    } catch (_) {
+      // Fallback: extract the first JSON object from the text
+      const start = cleaned.indexOf('{')
+      const end = cleaned.lastIndexOf('}')
+      if (start !== -1 && end > start) {
+        try {
+          return JSON.parse(cleaned.slice(start, end + 1))
+        } catch (_) {
+          // ignore
+        }
+      }
+      // Last resort: return a structured fallback with the raw text
+      console.warn("[LLMHelper] Could not parse JSON from LLM response, using raw text")
+      return {
+        problem_statement: cleaned,
+        context: "Could not parse structured response from LLM",
+        suggested_responses: ["Try again", "Rephrase your question"],
+        reasoning: "The LLM returned text that could not be parsed as JSON."
+      }
+    }
+  }
+
+  private async callOllama(prompt: string, images?: string[]): Promise<string> {
+    try {
+      const body: any = {
+        model: this.ollamaModel,
+        prompt: prompt,
+        stream: false,
+        options: {
+          temperature: 0.7,
+          top_p: 0.9,
+        }
+      }
+
+      // Add images for vision-capable models (llava, llama3.2-vision, etc.)
+      if (images && images.length > 0) {
+        body.images = images
+      }
+
       const response = await fetch(`${this.ollamaUrl}/api/generate`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          model: this.ollamaModel,
-          prompt: prompt,
-          stream: false,
-          options: {
-            temperature: 0.7,
-            top_p: 0.9,
-          }
-        }),
+        body: JSON.stringify(body),
       })
 
       if (!response.ok) {
@@ -123,8 +157,6 @@ export class LLMHelper {
 
   public async extractProblemFromImages(imagePaths: string[]) {
     try {
-      const imageParts = await Promise.all(imagePaths.map(path => this.fileToGenerativePart(path)))
-      
       const prompt = `${this.systemPrompt}\n\nYou are a wingman. Please analyze these images and extract the following information in JSON format:\n{
   "problem_statement": "A clear statement of the problem or situation depicted in the images.",
   "context": "Relevant background or context from the images.",
@@ -132,7 +164,19 @@ export class LLMHelper {
   "reasoning": "Explanation of why these suggestions are appropriate."
 }\nImportant: Return ONLY the JSON object, without any markdown formatting or code blocks.`
 
-      const result = await this.model.generateContent([prompt, ...imageParts])
+      if (this.useOllama) {
+        const images = await Promise.all(
+          imagePaths.map(async (p) => {
+            const data = await fs.promises.readFile(p)
+            return data.toString("base64")
+          })
+        )
+        const text = await this.callOllama(prompt, images)
+        return this.parseJsonSafe(text)
+      }
+
+      const imageParts = await Promise.all(imagePaths.map(path => this.fileToGenerativePart(path)))
+      const result = await this.model!.generateContent([prompt, ...imageParts])
       const response = await result.response
       const text = this.cleanJsonResponse(response.text())
       return JSON.parse(text)
@@ -153,9 +197,17 @@ export class LLMHelper {
   }
 }\nImportant: Return ONLY the JSON object, without any markdown formatting or code blocks.`
 
-    console.log("[LLMHelper] Calling Gemini LLM for solution...");
     try {
-      const result = await this.model.generateContent(prompt)
+      if (this.useOllama) {
+        console.log("[LLMHelper] Calling Ollama for solution...");
+        const text = await this.callOllama(prompt)
+        const parsed = this.parseJsonSafe(text)
+        console.log("[LLMHelper] Parsed Ollama response:", parsed)
+        return parsed
+      }
+
+      console.log("[LLMHelper] Calling Gemini LLM for solution...");
+      const result = await this.model!.generateContent(prompt)
       console.log("[LLMHelper] Gemini LLM returned result.");
       const response = await result.response
       const text = this.cleanJsonResponse(response.text())
@@ -170,8 +222,6 @@ export class LLMHelper {
 
   public async debugSolutionWithImages(problemInfo: any, currentCode: string, debugImagePaths: string[]) {
     try {
-      const imageParts = await Promise.all(debugImagePaths.map(path => this.fileToGenerativePart(path)))
-      
       const prompt = `${this.systemPrompt}\n\nYou are a wingman. Given:\n1. The original problem or situation: ${JSON.stringify(problemInfo, null, 2)}\n2. The current response or approach: ${currentCode}\n3. The debug information in the provided images\n\nPlease analyze the debug information and provide feedback in this JSON format:\n{
   "solution": {
     "code": "The code or main answer here.",
@@ -182,7 +232,21 @@ export class LLMHelper {
   }
 }\nImportant: Return ONLY the JSON object, without any markdown formatting or code blocks.`
 
-      const result = await this.model.generateContent([prompt, ...imageParts])
+      if (this.useOllama) {
+        const images = await Promise.all(
+          debugImagePaths.map(async (p) => {
+            const data = await fs.promises.readFile(p)
+            return data.toString("base64")
+          })
+        )
+        const text = await this.callOllama(prompt, images)
+        const parsed = this.parseJsonSafe(text)
+        console.log("[LLMHelper] Parsed debug Ollama response:", parsed)
+        return parsed
+      }
+
+      const imageParts = await Promise.all(debugImagePaths.map(path => this.fileToGenerativePart(path)))
+      const result = await this.model!.generateContent([prompt, ...imageParts])
       const response = await result.response
       const text = this.cleanJsonResponse(response.text())
       const parsed = JSON.parse(text)
@@ -196,6 +260,12 @@ export class LLMHelper {
 
   public async analyzeAudioFile(audioPath: string) {
     try {
+      if (this.useOllama) {
+        throw new Error(
+          "Audio analysis is not supported with Ollama. Please configure a Gemini API key (GEMINI_API_KEY) and set USE_OLLAMA=false in your .env file to enable audio analysis."
+        )
+      }
+
       const audioData = await fs.promises.readFile(audioPath);
       const audioPart = {
         inlineData: {
@@ -204,7 +274,7 @@ export class LLMHelper {
         }
       };
       const prompt = `${this.systemPrompt}\n\nDescribe this audio clip in a short, concise answer. In addition to your main answer, suggest several possible actions or responses the user could take next based on the audio. Do not return a structured JSON object, just answer naturally as you would to a user.`;
-      const result = await this.model.generateContent([prompt, audioPart]);
+      const result = await this.model!.generateContent([prompt, audioPart]);
       const response = await result.response;
       const text = response.text();
       return { text, timestamp: Date.now() };
@@ -216,6 +286,12 @@ export class LLMHelper {
 
   public async analyzeAudioFromBase64(data: string, mimeType: string) {
     try {
+      if (this.useOllama) {
+        throw new Error(
+          "Audio analysis is not supported with Ollama. Please configure a Gemini API key (GEMINI_API_KEY) and set USE_OLLAMA=false in your .env file to enable audio analysis."
+        )
+      }
+
       const audioPart = {
         inlineData: {
           data,
@@ -223,7 +299,7 @@ export class LLMHelper {
         }
       };
       const prompt = `${this.systemPrompt}\n\nDescribe this audio clip in a short, concise answer. In addition to your main answer, suggest several possible actions or responses the user could take next based on the audio. Do not return a structured JSON object, just answer naturally as you would to a user and be concise.`;
-      const result = await this.model.generateContent([prompt, audioPart]);
+      const result = await this.model!.generateContent([prompt, audioPart]);
       const response = await result.response;
       const text = response.text();
       return { text, timestamp: Date.now() };
@@ -236,6 +312,13 @@ export class LLMHelper {
   public async analyzeImageFile(imagePath: string) {
     try {
       const imageData = await fs.promises.readFile(imagePath);
+
+      if (this.useOllama) {
+        const prompt = `${this.systemPrompt}\n\nDescribe the content of this image in a short, concise answer. In addition to your main answer, suggest several possible actions or responses the user could take next based on the image. Do not return a structured JSON object, just answer naturally as you would to a user. Be concise and brief.`;
+        const text = await this.callOllama(prompt, [imageData.toString("base64")])
+        return { text, timestamp: Date.now() }
+      }
+
       const imagePart = {
         inlineData: {
           data: imageData.toString("base64"),
@@ -243,7 +326,7 @@ export class LLMHelper {
         }
       };
       const prompt = `${this.systemPrompt}\n\nDescribe the content of this image in a short, concise answer. In addition to your main answer, suggest several possible actions or responses the user could take next based on the image. Do not return a structured JSON object, just answer naturally as you would to a user. Be concise and brief.`;
-      const result = await this.model.generateContent([prompt, imagePart]);
+      const result = await this.model!.generateContent([prompt, imagePart]);
       const response = await result.response;
       const text = response.text();
       return { text, timestamp: Date.now() };
