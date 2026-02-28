@@ -25,7 +25,7 @@ export class LLMHelper {
       this.initializeOllamaModel()
     } else if (apiKey) {
       const genAI = new GoogleGenerativeAI(apiKey)
-      this.model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" })
+      this.model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" })
       console.log("[LLMHelper] Using Google Gemini")
     } else {
       throw new Error("Either provide Gemini API key or enable Ollama mode")
@@ -298,7 +298,7 @@ export class LLMHelper {
   }
 
   public getCurrentModel(): string {
-    return this.useOllama ? this.ollamaModel : "gemini-2.0-flash";
+    return this.useOllama ? this.ollamaModel : "gemini-2.5-flash";
   }
 
   public async switchToOllama(model?: string, url?: string): Promise<void> {
@@ -318,7 +318,7 @@ export class LLMHelper {
   public async switchToGemini(apiKey?: string): Promise<void> {
     if (apiKey) {
       const genAI = new GoogleGenerativeAI(apiKey);
-      this.model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+      this.model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
     }
     
     if (!this.model && !apiKey) {
