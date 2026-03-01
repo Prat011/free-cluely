@@ -18,12 +18,12 @@ export class ProcessingHelper {
 
   constructor(appState: AppState) {
     this.appState = appState
-    
+
     // Check if user wants to use Ollama
     const useOllama = process.env.USE_OLLAMA === "true"
     const ollamaModel = process.env.OLLAMA_MODEL // Don't set default here, let LLMHelper auto-detect
     const ollamaUrl = process.env.OLLAMA_URL || "http://localhost:11434"
-    
+
     if (useOllama) {
       console.log("[ProcessingHelper] Initializing with Ollama")
       this.llmHelper = new LLMHelper(undefined, true, ollamaModel, ollamaUrl)
@@ -157,6 +157,10 @@ export class ProcessingHelper {
   public async processAudioBase64(data: string, mimeType: string) {
     // Directly use LLMHelper to analyze inline base64 audio
     return this.llmHelper.analyzeAudioFromBase64(data, mimeType);
+  }
+
+  public async processAudioBase64Stream(data: string, mimeType: string, onChunk: (chunk: string) => void) {
+    return this.llmHelper.analyzeAudioFromBase64Stream(data, mimeType, onChunk);
   }
 
   // Add audio file processing method

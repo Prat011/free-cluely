@@ -116,15 +116,32 @@ const Queue: React.FC<QueueProps> = ({ setView }) => {
 
   const handleChatSend = async () => {
     if (!chatInput.trim()) return
-    setChatMessages((msgs) => [...msgs, { role: "user", text: chatInput }])
+    // Add empty response placeholder for streaming
+    setChatMessages((msgs) => [...msgs, { role: "user", text: chatInput }, { role: "gemini", text: "" }])
     setChatLoading(true)
+    const inputPayload = chatInput
     setChatInput("")
+
+    const unsub = window.electronAPI.onChatStream((chunk: string) => {
+      setChatLoading(false); // Stop loading animation when first chunk arrives
+      setChatMessages((msgs) => {
+        const newMsgs = [...msgs]
+        const last = newMsgs[newMsgs.length - 1]
+        if (last && last.role === "gemini") {
+          last.text += chunk
+        } else {
+          newMsgs.push({ role: "gemini", text: chunk })
+        }
+        return newMsgs
+      })
+    })
+
     try {
-      const response = await window.electronAPI.invoke("gemini-chat", chatInput)
-      setChatMessages((msgs) => [...msgs, { role: "gemini", text: response }])
+      await window.electronAPI.invoke("gemini-chat-stream", inputPayload)
     } catch (err) {
       setChatMessages((msgs) => [...msgs, { role: "gemini", text: "Error: " + String(err) }])
     } finally {
+      unsub()
       setChatLoading(false)
       chatInputRef.current?.focus()
     }
@@ -136,6 +153,11 @@ const Queue: React.FC<QueueProps> = ({ setView }) => {
       try {
         const config = await window.electronAPI.getCurrentLlmConfig();
         setCurrentModel({ provider: config.provider, model: config.model });
+
+        const storedUserInfo = localStorage.getItem("about_you_context");
+        if (storedUserInfo) {
+          window.electronAPI.invoke("update-user-info", storedUserInfo).catch(console.error);
+        }
       } catch (error) {
         console.error('Error loading current model config:', error);
       }
@@ -203,9 +225,29 @@ const Queue: React.FC<QueueProps> = ({ setView }) => {
         // Get the latest screenshot path
         const latest = data?.path || (Array.isArray(data) && data.length > 0 && data[data.length - 1]?.path);
         if (latest) {
+          // Add empty response placeholder for streaming
+          setChatMessages((msgs) => [...msgs, { role: "gemini", text: "" }]);
+
+          const unsubImg = window.electronAPI.onImageStream((chunk: string) => {
+            setChatLoading(false); // Stop loading animation when first chunk arrives
+            setChatMessages((msgs) => {
+              const newMsgs = [...msgs]
+              const last = newMsgs[newMsgs.length - 1]
+              if (last && last.role === "gemini") {
+                last.text += chunk
+              } else {
+                newMsgs.push({ role: "gemini", text: chunk })
+              }
+              return newMsgs
+            })
+          })
+
           // Call the LLM to process the screenshot
-          const response = await window.electronAPI.invoke("analyze-image-file", latest);
-          setChatMessages((msgs) => [...msgs, { role: "gemini", text: response.text }]);
+          try {
+            await window.electronAPI.invoke("analyze-image-file-stream", latest);
+          } finally {
+            unsubImg()
+          }
         }
       } catch (err) {
         setChatMessages((msgs) => [...msgs, { role: "gemini", text: "Error: " + String(err) }]);
@@ -280,8 +322,8 @@ const Queue: React.FC<QueueProps> = ({ setView }) => {
 
           {/* Conditional Chat Interface */}
           {isChatOpen && (
-            <div className="mt-4 w-full mx-auto liquid-glass chat-container p-4 flex flex-col">
-              <div className="flex-1 overflow-y-auto mb-3 p-3 rounded-lg bg-white/10 backdrop-blur-md max-h-64 min-h-[120px] glass-content border border-white/20 shadow-lg">
+            <div className="mt-4 w-full mx-auto liquid-glass chat-container p-4 flex flex-col bg-black/20">
+              <div className="flex-1 overflow-y-auto mb-3 p-3 rounded-lg bg-black/40 backdrop-blur-md max-h-64 min-h-[120px] glass-content border border-black/40 shadow-lg">
                 {chatMessages.length === 0 ? (
                   <div className="text-sm text-gray-600 text-center mt-8">
                     💬 Chat with {currentModel.provider === "ollama" ? "🏠" : "☁️"} {currentModel.model}
@@ -298,8 +340,8 @@ const Queue: React.FC<QueueProps> = ({ setView }) => {
                     >
                       <div
                         className={`max-w-[80%] px-3 py-1.5 rounded-xl text-xs shadow-md backdrop-blur-sm border ${msg.role === "user"
-                          ? "bg-gray-700/80 text-gray-100 ml-12 border-gray-600/40"
-                          : "bg-white/85 text-gray-700 mr-12 border-gray-200/50"
+                          ? "bg-black/90 text-white border-black/80"
+                          : "bg-black/90 text-white border-black/80"
                           }`}
                         style={{ wordBreak: "break-word", lineHeight: "1.4" }}
                       >
@@ -314,7 +356,7 @@ const Queue: React.FC<QueueProps> = ({ setView }) => {
                 )}
                 {chatLoading && (
                   <div className="flex justify-start mb-3">
-                    <div className="bg-white/85 text-gray-600 px-3 py-1.5 rounded-xl text-xs backdrop-blur-sm border border-gray-200/50 shadow-md mr-12">
+                    <div className="bg-black/90 text-white px-3 py-1.5 rounded-xl text-xs backdrop-blur-sm border border-black/80 shadow-md mr-12">
                       <span className="inline-flex items-center">
                         <span className="animate-pulse text-gray-400">●</span>
                         <span className="animate-pulse animation-delay-200 text-gray-400">●</span>
@@ -334,7 +376,7 @@ const Queue: React.FC<QueueProps> = ({ setView }) => {
               >
                 <input
                   ref={chatInputRef}
-                  className="flex-1 rounded-lg px-3 py-2 bg-white/25 backdrop-blur-md text-gray-800 placeholder-gray-500 text-xs focus:outline-none focus:ring-1 focus:ring-gray-400/60 border border-white/40 shadow-lg transition-all duration-200"
+                  className="flex-1 rounded-lg px-3 py-2 bg-black/60 backdrop-blur-md text-white placeholder-gray-400 text-xs focus:outline-none focus:ring-1 focus:ring-black/80 border border-black/40 shadow-lg transition-all duration-200"
                   placeholder="Type your message..."
                   value={chatInput}
                   onChange={e => setChatInput(e.target.value)}

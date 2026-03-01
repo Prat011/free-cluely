@@ -12,6 +12,9 @@ export class LLMHelper {
   private useOllama: boolean = false
   private ollamaModel: string = "llama3.2"
   private ollamaUrl: string = "http://localhost:11434"
+  private userInfo: string = ""
+  private geminiModelName: string = "gemini-2.5-flash"
+  private apiKey: string = ""
 
   constructor(apiKey?: string, useOllama: boolean = false, ollamaModel?: string, ollamaUrl?: string) {
     this.useOllama = useOllama
@@ -24,12 +27,17 @@ export class LLMHelper {
       // Auto-detect and use first available model if specified model doesn't exist
       this.initializeOllamaModel()
     } else if (apiKey) {
+      this.apiKey = apiKey
       const genAI = new GoogleGenerativeAI(apiKey)
-      this.model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" })
-      console.log("[LLMHelper] Using Google Gemini")
+      this.model = genAI.getGenerativeModel({ model: this.geminiModelName })
+      console.log(`[LLMHelper] Using Google Gemini (${this.geminiModelName})`)
     } else {
       throw new Error("Either provide Gemini API key or enable Ollama mode")
     }
+  }
+
+  public setUserInfo(info: string) {
+    this.userInfo = info;
   }
 
   private async fileToGenerativePart(imagePath: string) {
@@ -222,13 +230,54 @@ export class LLMHelper {
           mimeType
         }
       };
-      const prompt = `${this.systemPrompt}\n\nThe provided audio clip contains a question or a problem statement. Please act as a solver and provide the direct answer or solution to whatever is being asked in the audio. Do not return a structured JSON object, just answer naturally as you would to a user, and format your answer clearly with markdown.`;
+
+      const userContextStr = this.userInfo ? `\n\nAbout the User:\n${this.userInfo}` : "";
+      const prompt = `You are an invisible, real-time meeting assistant. The user is currently in a live professional meeting. The following text is a direct transcription of a question the user just spoke into their microphone.${userContextStr}
+
+Your Constraints:
+- Answer the question directly and concisely.
+- NEVER acknowledge that this text comes from an audio transcription.
+- NEVER describe the speaker's voice, tone, or audio quality.
+- Provide actionable answers that the user can immediately use in their meeting.`;
+
       const result = await this.model.generateContent([prompt, audioPart]);
       const response = await result.response;
       const text = response.text();
       return { text, timestamp: Date.now() };
     } catch (error) {
       console.error("Error analyzing audio from base64:", error);
+      throw error;
+    }
+  }
+
+  public async analyzeAudioFromBase64Stream(data: string, mimeType: string, onChunk: (chunk: string) => void) {
+    try {
+      const audioPart = {
+        inlineData: {
+          data,
+          mimeType
+        }
+      };
+
+      const userContextStr = this.userInfo ? `\n\nAbout the User:\n${this.userInfo}` : "";
+      const prompt = `You are an invisible, real-time meeting assistant. The user is currently in a live professional meeting. The following text is a direct transcription of a question the user just spoke into their microphone.${userContextStr}
+
+Your Constraints:
+- Answer the question directly and concisely.
+- NEVER acknowledge that this text comes from an audio transcription.
+- NEVER describe the speaker's voice, tone, or audio quality.
+- Provide actionable answers that the user can immediately use in their meeting.`;
+
+      const result = await this.model.generateContentStream([prompt, audioPart]);
+      let fullText = "";
+      for await (const chunk of result.stream) {
+        const chunkText = chunk.text();
+        fullText += chunkText;
+        onChunk(chunkText);
+      }
+      return { text: fullText, timestamp: Date.now() };
+    } catch (error) {
+      console.error("Error analyzing audio from base64 stream:", error);
       throw error;
     }
   }
@@ -253,6 +302,31 @@ export class LLMHelper {
     }
   }
 
+  public async analyzeImageFileStream(imagePath: string, onChunk: (chunk: string) => void) {
+    try {
+      const imageData = await fs.promises.readFile(imagePath);
+      const imagePart = {
+        inlineData: {
+          data: imageData.toString("base64"),
+          mimeType: "image/png"
+        }
+      };
+      const prompt = `${this.systemPrompt}\n\nDescribe the content of this image in a short, concise answer. In addition to your main answer, suggest several possible actions or responses the user could take next based on the image. Do not return a structured JSON object, just answer naturally as you would to a user. Be concise and brief.`;
+
+      const result = await this.model.generateContentStream([prompt, imagePart]);
+      let fullText = "";
+      for await (const chunk of result.stream) {
+        const chunkText = chunk.text();
+        fullText += chunkText;
+        onChunk(chunkText);
+      }
+      return { text: fullText, timestamp: Date.now() };
+    } catch (error) {
+      console.error("Error analyzing image file stream:", error);
+      throw error;
+    }
+  }
+
   public async chatWithGemini(message: string): Promise<string> {
     try {
       if (this.useOllama) {
@@ -266,6 +340,30 @@ export class LLMHelper {
       }
     } catch (error) {
       console.error("[LLMHelper] Error in chatWithGemini:", error);
+      throw error;
+    }
+  }
+
+  public async chatWithGeminiStream(message: string, onChunk: (chunk: string) => void): Promise<string> {
+    try {
+      if (this.useOllama) {
+        const text = await this.callOllama(message);
+        onChunk(text);
+        return text;
+      } else if (this.model) {
+        const result = await this.model.generateContentStream(message);
+        let fullText = "";
+        for await (const chunk of result.stream) {
+          const chunkText = chunk.text();
+          fullText += chunkText;
+          onChunk(chunkText);
+        }
+        return fullText;
+      } else {
+        throw new Error("No LLM provider configured");
+      }
+    } catch (error) {
+      console.error("[LLMHelper] Error in chatWithGeminiStream:", error);
       throw error;
     }
   }
@@ -298,7 +396,7 @@ export class LLMHelper {
   }
 
   public getCurrentModel(): string {
-    return this.useOllama ? this.ollamaModel : "gemini-2.5-flash"
+    return this.useOllama ? this.ollamaModel : this.geminiModelName
   }
 
   public async switchToOllama(model?: string, url?: string): Promise<void> {
@@ -315,10 +413,18 @@ export class LLMHelper {
     console.log(`[LLMHelper] Switched to Ollama: ${this.ollamaModel} at ${this.ollamaUrl}`);
   }
 
-  public async switchToGemini(apiKey?: string): Promise<void> {
+  public async switchToGemini(apiKey?: string, modelName?: string): Promise<void> {
+    if (modelName) {
+      this.geminiModelName = modelName;
+    }
     if (apiKey) {
+      this.apiKey = apiKey;
       const genAI = new GoogleGenerativeAI(apiKey);
-      this.model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+      this.model = genAI.getGenerativeModel({ model: this.geminiModelName });
+    } else if (this.apiKey) {
+      // Re-create model with new model name using existing API key
+      const genAI = new GoogleGenerativeAI(this.apiKey);
+      this.model = genAI.getGenerativeModel({ model: this.geminiModelName });
     }
 
     if (!this.model && !apiKey) {
@@ -326,7 +432,7 @@ export class LLMHelper {
     }
 
     this.useOllama = false;
-    console.log("[LLMHelper] Switched to Gemini");
+    console.log(`[LLMHelper] Switched to Gemini (${this.geminiModelName})`);
   }
 
   public async testConnection(): Promise<{ success: boolean; error?: string }> {

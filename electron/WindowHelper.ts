@@ -102,7 +102,7 @@ export class WindowHelper {
     }
 
     this.mainWindow = new BrowserWindow(windowSettings)
-    // this.mainWindow.webContents.openDevTools()
+    this.mainWindow.webContents.openDevTools({ mode: 'detach' })
 
     // === STEALTH MODE SETUP ===
     // 1. Set opacity first (workaround for setContentProtection on some Windows versions)

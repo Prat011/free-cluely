@@ -75,8 +75,13 @@ export const ContentSection = ({
         </p>
       </div>
     ) : (
-      <div className="text-[13px] leading-[1.4] text-gray-100 max-w-[600px]">
-        {renderContent(content)}
+      <div className="w-full flex justify-start my-2">
+        <div
+          className="max-w-[85%] px-3 py-1.5 rounded-xl text-[13px] leading-[1.4] shadow-md backdrop-blur-sm border bg-black/90 text-white border-black/80"
+          style={{ wordBreak: "break-word" }}
+        >
+          {renderContent(content)}
+        </div>
       </div>
     )}
   </div>
