@@ -164,6 +164,17 @@ export function initializeIpcHandlers(appState: AppState): void {
     }
   });
 
+  ipcMain.handle("get-ollama-model-capabilities", async () => {
+    try {
+      const llmHelper = appState.processingHelper.getLLMHelper();
+      const capabilities = await llmHelper.getOllamaModelCapabilities();
+      return capabilities;
+    } catch (error: any) {
+      console.error("Error getting Ollama model capabilities:", error);
+      throw error;
+    }
+  });
+
   ipcMain.handle("switch-to-ollama", async (_, model?: string, url?: string) => {
     try {
       const llmHelper = appState.processingHelper.getLLMHelper();

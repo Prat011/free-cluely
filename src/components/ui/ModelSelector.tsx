@@ -6,6 +6,12 @@ interface ModelConfig {
   isOllama: boolean;
 }
 
+interface OllamaModelCapability {
+  name: string;
+  supportsVision: boolean;
+  supportsAudio: boolean;
+}
+
 interface ModelSelectorProps {
   onModelChange?: (provider: "ollama" | "gemini", model: string) => void;
   onChatOpen?: () => void;
@@ -14,6 +20,7 @@ interface ModelSelectorProps {
 const ModelSelector: React.FC<ModelSelectorProps> = ({ onModelChange, onChatOpen }) => {
   const [currentConfig, setCurrentConfig] = useState<ModelConfig | null>(null);
   const [availableOllamaModels, setAvailableOllamaModels] = useState<string[]>([]);
+  const [ollamaModelCapabilities, setOllamaModelCapabilities] = useState<OllamaModelCapability[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [connectionStatus, setConnectionStatus] = useState<'testing' | 'success' | 'error' | null>(null);
   const [errorMessage, setErrorMessage] = useState<string>('');
@@ -25,6 +32,12 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ onModelChange, onChatOpen
   useEffect(() => {
     loadCurrentConfig();
   }, []);
+
+  useEffect(() => {
+    if (selectedProvider === 'ollama') {
+      loadOllamaModels();
+    }
+  }, [selectedProvider]);
 
   const loadCurrentConfig = async () => {
     try {
@@ -46,7 +59,10 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ onModelChange, onChatOpen
 
   const loadOllamaModels = async () => {
     try {
-      const models = await window.electronAPI.getAvailableOllamaModels();
+      const capabilities = await window.electronAPI.getOllamaModelCapabilities();
+      const models = capabilities.map((capability) => capability.name);
+
+      setOllamaModelCapabilities(capabilities);
       setAvailableOllamaModels(models);
       
       // Auto-select first model if none selected
@@ -55,9 +71,18 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ onModelChange, onChatOpen
       }
     } catch (error) {
       console.error('Error loading Ollama models:', error);
+      setOllamaModelCapabilities([]);
       setAvailableOllamaModels([]);
     }
   };
+
+  const getModelCapabilities = (modelName: string) => {
+    return ollamaModelCapabilities.find((model) => model.name === modelName);
+  };
+
+  const hasVisionModel = ollamaModelCapabilities.some((model) => model.supportsVision);
+  const hasAudioModel = ollamaModelCapabilities.some((model) => model.supportsAudio);
+  const selectedModelCapabilities = getModelCapabilities(selectedOllamaModel);
 
   const testConnection = async () => {
     try {
@@ -208,17 +233,46 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ onModelChange, onChatOpen
             </div>
             
             {availableOllamaModels.length > 0 ? (
-              <select
-                value={selectedOllamaModel}
-                onChange={(e) => setSelectedOllamaModel(e.target.value)}
-                className="w-full px-3 py-2 text-xs bg-white/40 border border-white/60 rounded focus:outline-none focus:ring-2 focus:ring-green-400/60"
-              >
-                {availableOllamaModels.map((model) => (
-                  <option key={model} value={model}>
-                    {model}
-                  </option>
-                ))}
-              </select>
+              <>
+                <select
+                  value={selectedOllamaModel}
+                  onChange={(e) => setSelectedOllamaModel(e.target.value)}
+                  className="w-full px-3 py-2 text-xs bg-white/40 border border-white/60 rounded focus:outline-none focus:ring-2 focus:ring-green-400/60"
+                >
+                  {availableOllamaModels.map((model) => {
+                    const capability = getModelCapabilities(model);
+                    const tags = [
+                      capability?.supportsVision ? 'vision' : '',
+                      capability?.supportsAudio ? 'audio' : ''
+                    ].filter(Boolean);
+
+                    return (
+                      <option key={model} value={model}>
+                        {tags.length > 0 ? `${model} [${tags.join(', ')}]` : model}
+                      </option>
+                    );
+                  })}
+                </select>
+
+                {selectedModelCapabilities && (
+                  <div className="mt-2 text-xs text-gray-700 bg-white/40 p-2 rounded">
+                    Selected capabilities: {selectedModelCapabilities.supportsVision ? 'vision ' : ''}{selectedModelCapabilities.supportsAudio ? 'audio' : ''}
+                    {!selectedModelCapabilities.supportsVision && !selectedModelCapabilities.supportsAudio ? 'text-only' : ''}
+                  </div>
+                )}
+
+                {!hasVisionModel && (
+                  <div className="mt-2 text-xs text-amber-800 bg-amber-100/70 p-2 rounded">
+                    No vision-capable Ollama model detected. Install one with: <code>ollama pull llama3.2-vision:11b</code> or <code>ollama pull llava:7b</code>.
+                  </div>
+                )}
+
+                {!hasAudioModel && (
+                  <div className="mt-2 text-xs text-amber-800 bg-amber-100/70 p-2 rounded">
+                    No audio-capable Ollama model detected. Try: <code>ollama pull qwen2-audio:7b</code> (if available in your Ollama build).
+                  </div>
+                )}
+              </>
             ) : (
               <div className="text-xs text-gray-600 bg-yellow-100/60 p-2 rounded">
                 No Ollama models found. Make sure Ollama is running and models are installed.
