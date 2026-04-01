@@ -1,9 +1,45 @@
 import { app, BrowserWindow, Tray, Menu, nativeImage } from "electron"
+import { spawn } from "child_process"
 import { initializeIpcHandlers } from "./ipcHandlers"
 import { WindowHelper } from "./WindowHelper"
 import { ScreenshotHelper } from "./ScreenshotHelper"
 import { ShortcutsHelper } from "./shortcuts"
 import { ProcessingHelper } from "./ProcessingHelper"
+import { HOTKEYS } from "./shortcuts"
+
+const DETACHED_LAUNCH_ARG = "--detached-launch"
+
+function relaunchDetachedIfNeeded(): boolean {
+  if (process.platform !== "win32") return false
+  if (process.argv.includes(DETACHED_LAUNCH_ARG)) return false
+
+  const detachEnabled = (process.env.APP_DETACH_FROM_TERMINAL || "true").trim().toLowerCase() !== "false"
+  if (!detachEnabled) return false
+
+  try {
+    const childArgs = [...process.argv.slice(1), DETACHED_LAUNCH_ARG]
+    const detachedChild = spawn(process.execPath, childArgs, {
+      cwd: process.cwd(),
+      detached: true,
+      stdio: "ignore",
+      windowsHide: true,
+      env: {
+        ...process.env,
+        APP_DETACHED_LAUNCH: "1"
+      }
+    })
+
+    detachedChild.unref()
+    return true
+  } catch (error) {
+    console.error("[AppState] Failed to relaunch detached process:", error)
+    return false
+  }
+}
+
+if (relaunchDetachedIfNeeded()) {
+  app.exit(0)
+}
 
 export class AppState {
   private static instance: AppState | null = null
@@ -145,9 +181,19 @@ export class AppState {
   public async takeScreenshot(): Promise<string> {
     if (!this.getMainWindow()) throw new Error("No main window available")
 
+    const wasVisible = this.isVisible()
+
     const screenshotPath = await this.screenshotHelper.takeScreenshot(
-      () => this.hideMainWindow(),
-      () => this.showMainWindow()
+      () => {
+        if (wasVisible) {
+          this.hideMainWindow()
+        }
+      },
+      () => {
+        if (wasVisible) {
+          this.showMainWindow()
+        }
+      }
     )
 
     return screenshotPath
@@ -215,7 +261,7 @@ export class AppState {
         type: 'separator'
       },
       {
-        label: 'Take Screenshot (Cmd+H)',
+        label: `Take Screenshot (${HOTKEYS.screenshot})`,
         click: async () => {
           try {
             const screenshotPath = await this.takeScreenshot()
@@ -244,7 +290,7 @@ export class AppState {
       }
     ])
     
-    this.tray.setToolTip('Interview Coder - Press Cmd+Shift+Space to show')
+    this.tray.setToolTip(`Interview Coder - Press ${HOTKEYS.toggleWindow} to show`)
     this.tray.setContextMenu(contextMenu)
     
     // Set a title for macOS (will appear in menu bar)

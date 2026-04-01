@@ -2,6 +2,8 @@
 
 import { ipcMain, app } from "electron"
 import { AppState } from "./main"
+import { SessionSource } from "./SessionMemoryHelper"
+import { HOTKEYS } from "./shortcuts"
 
 export function initializeIpcHandlers(appState: AppState): void {
   ipcMain.handle(
@@ -95,7 +97,7 @@ export function initializeIpcHandlers(appState: AppState): void {
   // IPC handler for analyzing image from file path
   ipcMain.handle("analyze-image-file", async (event, path: string) => {
     try {
-      const result = await appState.processingHelper.getLLMHelper().analyzeImageFile(path)
+      const result = await appState.processingHelper.processImageFile(path)
       return result
     } catch (error: any) {
       console.error("Error in analyze-image-file handler:", error)
@@ -105,13 +107,56 @@ export function initializeIpcHandlers(appState: AppState): void {
 
   ipcMain.handle("gemini-chat", async (event, message: string) => {
     try {
-      const result = await appState.processingHelper.getLLMHelper().chatWithGemini(message);
-      return result;
+      const result = await appState.processingHelper.submitTaggedInput("chat", message)
+      return result.reply
     } catch (error: any) {
-      console.error("Error in gemini-chat handler:", error);
-      throw error;
+      console.error("Error in gemini-chat handler:", error)
+      throw error
     }
-  });
+  })
+
+  ipcMain.handle(
+    "submit-tagged-input",
+    async (_, source: SessionSource, text: string, metadata?: Record<string, any>) => {
+      try {
+        return await appState.processingHelper.submitTaggedInput(source, text, metadata)
+      } catch (error: any) {
+        console.error("Error in submit-tagged-input handler:", error)
+        throw error
+      }
+    }
+  )
+
+  ipcMain.handle("get-session-entries", async () => {
+    try {
+      return appState.processingHelper.getSessionEntries()
+    } catch (error: any) {
+      console.error("Error in get-session-entries handler:", error)
+      throw error
+    }
+  })
+
+  ipcMain.handle("toggle-realtime-audio-transcription", async () => {
+    try {
+      return await appState.processingHelper.toggleRealtimeAudioTranscription()
+    } catch (error: any) {
+      console.error("Error toggling realtime audio transcription:", error)
+      throw error
+    }
+  })
+
+  ipcMain.handle("get-realtime-audio-transcription-state", async () => {
+    try {
+      return appState.processingHelper.getRealtimeAudioTranscriptionState()
+    } catch (error: any) {
+      console.error("Error getting realtime transcription state:", error)
+      throw error
+    }
+  })
+
+  ipcMain.handle("get-hotkeys", async () => {
+    return HOTKEYS
+  })
 
   ipcMain.handle("quit-app", () => {
     app.quit()
@@ -145,7 +190,8 @@ export function initializeIpcHandlers(appState: AppState): void {
       return {
         provider: llmHelper.getCurrentProvider(),
         model: llmHelper.getCurrentModel(),
-        isOllama: llmHelper.isUsingOllama()
+        isOllama: llmHelper.isUsingOllama(),
+        isNvidia: llmHelper.isUsingNvidia()
       };
     } catch (error: any) {
       console.error("Error getting current LLM config:", error);
@@ -197,6 +243,17 @@ export function initializeIpcHandlers(appState: AppState): void {
     }
   });
 
+  ipcMain.handle("switch-to-nvidia", async (_, apiKey?: string, model?: string, url?: string) => {
+    try {
+      const llmHelper = appState.processingHelper.getLLMHelper();
+      await llmHelper.switchToNvidia(apiKey, model, url);
+      return { success: true };
+    } catch (error: any) {
+      console.error("Error switching to NVIDIA:", error);
+      return { success: false, error: error.message };
+    }
+  });
+
   ipcMain.handle("test-llm-connection", async () => {
     try {
       const llmHelper = appState.processingHelper.getLLMHelper();
@@ -204,6 +261,26 @@ export function initializeIpcHandlers(appState: AppState): void {
       return result;
     } catch (error: any) {
       console.error("Error testing LLM connection:", error);
+      return { success: false, error: error.message };
+    }
+  });
+
+  ipcMain.handle("get-screenshot-understanding-mode", async () => {
+    try {
+      const mode = appState.processingHelper.getCurrentScreenshotUnderstandingMode();
+      return { mode };
+    } catch (error: any) {
+      console.error("Error getting screenshot understanding mode:", error);
+      return { mode: "ocr", error: error.message };
+    }
+  });
+
+  ipcMain.handle("set-screenshot-understanding-mode", async (_, mode: string) => {
+    try {
+      const normalized = appState.processingHelper.setScreenshotUnderstandingMode(mode);
+      return { success: true, mode: normalized };
+    } catch (error: any) {
+      console.error("Error setting screenshot understanding mode:", error);
       return { success: false, error: error.message };
     }
   });

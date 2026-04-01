@@ -13,7 +13,6 @@ import {
   ToastVariant
 } from "../components/ui/toast"
 import { ProblemStatementData } from "../types/solutions"
-import { AudioResult } from "../types/audio"
 import SolutionCommands from "../components/Solutions/SolutionCommands"
 import Debug from "./Debug"
 
@@ -130,10 +129,6 @@ interface SolutionsProps {
 const Solutions: React.FC<SolutionsProps> = ({ setView }) => {
   const queryClient = useQueryClient()
   const contentRef = useRef<HTMLDivElement>(null)
-
-  // Audio recording state
-  const [audioRecording, setAudioRecording] = useState(false)
-  const [audioResult, setAudioResult] = useState<AudioResult | null>(null)
 
   const [debugProcessing, setDebugProcessing] = useState(false)
   const [problemStatementData, setProblemStatementData] =
@@ -253,42 +248,6 @@ const Solutions: React.FC<SolutionsProps> = ({ setView }) => {
         setTimeComplexityData(null)
         setSpaceComplexityData(null)
         setCustomContent(null)
-        setAudioResult(null)
-
-        // Start audio recording from user's microphone
-        try {
-          const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
-          const mediaRecorder = new MediaRecorder(stream)
-          const chunks: Blob[] = []
-          mediaRecorder.ondataavailable = (e) => chunks.push(e.data)
-          mediaRecorder.start()
-          setAudioRecording(true)
-          // Record for 5 seconds (or adjust as needed)
-          setTimeout(() => mediaRecorder.stop(), 5000)
-          mediaRecorder.onstop = async () => {
-            setAudioRecording(false)
-            const blob = new Blob(chunks, { type: chunks[0]?.type || 'audio/webm' })
-            const reader = new FileReader()
-            reader.onloadend = async () => {
-              const base64Data = (reader.result as string).split(',')[1]
-              // Send audio to Gemini for analysis
-              try {
-                const result = await window.electronAPI.analyzeAudioFromBase64(
-                  base64Data,
-                  blob.type
-                )
-                // Store result in react-query cache
-                queryClient.setQueryData(["audio_result"], result)
-                setAudioResult(result)
-              } catch (err) {
-                console.error('Audio analysis failed:', err)
-              }
-            }
-            reader.readAsDataURL(blob)
-          }
-        } catch (err) {
-          console.error('Audio recording error:', err)
-        }
 
         // Simulate receiving custom content shortly after start
         setTimeout(() => {
@@ -385,41 +344,30 @@ const Solutions: React.FC<SolutionsProps> = ({ setView }) => {
     setProblemStatementData(
       queryClient.getQueryData(["problem_statement"]) || null
     )
-    setSolutionData(queryClient.getQueryData(["solution"]) || null)
+    const initialSolution = queryClient.getQueryData(["solution"]) as
+      | {
+          code: string
+          thoughts: string[]
+          time_complexity: string
+          space_complexity: string
+        }
+      | string
+      | null
+
+    if (typeof initialSolution === "string") {
+      setSolutionData(initialSolution)
+    } else {
+      setSolutionData(initialSolution?.code ?? null)
+      setThoughtsData(initialSolution?.thoughts ?? null)
+      setTimeComplexityData(initialSolution?.time_complexity ?? null)
+      setSpaceComplexityData(initialSolution?.space_complexity ?? null)
+    }
 
     const unsubscribe = queryClient.getQueryCache().subscribe((event) => {
       if (event?.query.queryKey[0] === "problem_statement") {
         setProblemStatementData(
           queryClient.getQueryData(["problem_statement"]) || null
         )
-        // If this is from audio processing, show it in the custom content section
-        const audioResult = queryClient.getQueryData(["audio_result"]) as AudioResult | undefined;
-        if (audioResult) {
-          // Update all relevant sections when audio result is received
-          setProblemStatementData({
-            problem_statement: audioResult.text,
-            input_format: {
-              description: "Generated from audio input",
-              parameters: []
-            },
-            output_format: {
-              description: "Generated from audio input",
-              type: "string",
-              subtype: "text"
-            },
-            complexity: {
-              time: "N/A",
-              space: "N/A"
-            },
-            test_cases: [],
-            validation_type: "manual",
-            difficulty: "custom"
-          });
-          setSolutionData(null); // Reset solution to trigger loading state
-          setThoughtsData(null);
-          setTimeComplexityData(null);
-          setSpaceComplexityData(null);
-        }
       }
       if (event?.query.queryKey[0] === "solution") {
         const solution = queryClient.getQueryData(["solution"]) as {
@@ -491,11 +439,29 @@ const Solutions: React.FC<SolutionsProps> = ({ setView }) => {
               <div className="px-4 py-3 space-y-4 max-w-full">
                 {/* Show Screenshot or Audio Result as main output if validation_type is manual */}
                 {problemStatementData?.validation_type === "manual" ? (
-                  <ContentSection
-                    title={problemStatementData?.output_format?.subtype === "voice" ? "Audio Result" : "Screenshot Result"}
-                    content={problemStatementData.problem_statement}
-                    isLoading={false}
-                  />
+                  <>
+                    <ContentSection
+                      title={problemStatementData?.output_format?.subtype === "voice" ? "Audio Result" : "Screenshot Result"}
+                      content={problemStatementData.problem_statement}
+                      isLoading={false}
+                    />
+
+                    {problemStatementData && !solutionData && (
+                      <div className="mt-4 flex">
+                        <p className="text-xs bg-gradient-to-r from-gray-300 via-gray-100 to-gray-300 bg-clip-text text-transparent animate-pulse">
+                          Generating final answer...
+                        </p>
+                      </div>
+                    )}
+
+                    {solutionData && (
+                      <SolutionSection
+                        title={problemStatementData?.output_format?.subtype === "voice" ? "Response" : "Solution"}
+                        content={solutionData}
+                        isLoading={!solutionData}
+                      />
+                    )}
+                  </>
                 ) : (
                   <>
                     {/* Problem Statement Section - Only for non-manual */}

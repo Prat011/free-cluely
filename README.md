@@ -34,17 +34,34 @@ npm install
 
 3. Set up environment variables:
    - Create a file named `.env` in the root folder
-   
+
+   **Provider Selection (recommended):**
+   ```env
+   # One of: gemini | ollama | nvidia
+   LLM_PROVIDER=gemini
+   ```
+
    **For Gemini (Cloud AI):**
    ```env
+   LLM_PROVIDER=gemini
    GEMINI_API_KEY=your_api_key_here
    ```
-   
+
    **For Ollama (Local/Private AI):**
    ```env
+   LLM_PROVIDER=ollama
    USE_OLLAMA=true
    OLLAMA_MODEL=llama3.2
    OLLAMA_URL=http://localhost:11434
+   ```
+
+   **For NVIDIA Build Models (Multimodal):**
+   ```env
+   LLM_PROVIDER=nvidia
+   USE_NVIDIA=true
+   NVIDIA_API_KEY=your_nvidia_api_key_here
+   NVIDIA_MODEL=mistralai/mistral-small-3.1-24b-instruct-2503
+   NVIDIA_URL=https://integrate.api.nvidia.com/v1/chat/completions
    ```
    
    - Save the file

@@ -15,6 +15,9 @@ export class WindowHelper {
   private windowPosition: { x: number; y: number } | null = null
   private windowSize: { width: number; height: number } | null = null
   private appState: AppState
+  private readonly avoidFocusByDefault: boolean
+  private readonly overlayClickThrough: boolean
+  private readonly startVisible: boolean
 
   // Initialize with explicit number type and 0 value
   private screenWidth: number = 0
@@ -25,6 +28,64 @@ export class WindowHelper {
 
   constructor(appState: AppState) {
     this.appState = appState
+    this.avoidFocusByDefault = this.parseBooleanEnv(process.env.OVERLAY_AVOID_FOCUS, true)
+    this.overlayClickThrough = this.parseBooleanEnv(process.env.OVERLAY_CLICK_THROUGH, false)
+    this.startVisible = this.parseBooleanEnv(process.env.APP_START_VISIBLE, false)
+  }
+
+  private parseBooleanEnv(raw: string | undefined, fallback: boolean): boolean {
+    if (!raw) return fallback
+    const normalized = raw.trim().toLowerCase()
+    if (["1", "true", "yes", "on"].includes(normalized)) return true
+    if (["0", "false", "no", "off"].includes(normalized)) return false
+    return fallback
+  }
+
+  private applyCaptureExclusion(window: BrowserWindow): void {
+    try {
+      // On Windows, Electron maps this to native display-affinity capture protection
+      // (WDA_EXCLUDEFROMCAPTURE when supported by OS/runtime).
+      window.setContentProtection(true)
+    } catch (error) {
+      console.warn("[WindowHelper] Failed to enable capture exclusion:", error)
+    }
+  }
+
+  private applyTaskbarHiding(window: BrowserWindow): void {
+    try {
+      window.setSkipTaskbar(true)
+    } catch (error) {
+      console.warn("[WindowHelper] Failed to apply taskbar hiding:", error)
+    }
+  }
+
+  private enforceTaskbarHiding(window: BrowserWindow): void {
+    this.applyTaskbarHiding(window)
+
+    // Windows shell can occasionally re-surface a taskbar button on show/focus transitions.
+    // Re-apply a couple of times to keep overlay behavior stable.
+    setTimeout(() => {
+      if (!window.isDestroyed()) this.applyTaskbarHiding(window)
+    }, 80)
+
+    setTimeout(() => {
+      if (!window.isDestroyed()) this.applyTaskbarHiding(window)
+    }, 400)
+  }
+
+  private applyOverlayInteractionMode(window: BrowserWindow): void {
+    try {
+      if (this.overlayClickThrough) {
+        window.setIgnoreMouseEvents(true, { forward: true })
+        window.setFocusable(false)
+        return
+      }
+
+      window.setIgnoreMouseEvents(false)
+      window.setFocusable(true)
+    } catch (error) {
+      console.warn("[WindowHelper] Failed to apply overlay interaction mode:", error)
+    }
   }
 
   public setWindowDimensions(width: number, height: number): void {
@@ -93,13 +154,15 @@ export class WindowHelper {
       focusable: true,
       resizable: true,
       movable: true,
+      skipTaskbar: true,
       x: 100, // Start at a visible position
       y: 100
     }
 
     this.mainWindow = new BrowserWindow(windowSettings)
     // this.mainWindow.webContents.openDevTools()
-    this.mainWindow.setContentProtection(true)
+    this.applyCaptureExclusion(this.mainWindow)
+    this.applyOverlayInteractionMode(this.mainWindow)
 
     if (process.platform === "darwin") {
       this.mainWindow.setVisibleOnAllWorkspaces(true, {
@@ -116,7 +179,7 @@ export class WindowHelper {
       // Keep window focusable on Linux for proper interaction
       this.mainWindow.setFocusable(true)
     } 
-    this.mainWindow.setSkipTaskbar(true)
+    this.enforceTaskbarHiding(this.mainWindow)
     this.mainWindow.setAlwaysOnTop(true)
 
     this.mainWindow.loadURL(startUrl).catch((err) => {
@@ -128,10 +191,23 @@ export class WindowHelper {
       if (this.mainWindow) {
         // Center the window first
         this.centerWindow()
-        this.mainWindow.show()
-        this.mainWindow.focus()
+        if (this.startVisible) {
+          this.mainWindow.showInactive()
+          if (!this.avoidFocusByDefault && !this.overlayClickThrough) {
+            this.mainWindow.focus()
+          }
+          this.isWindowVisible = true
+        } else {
+          this.mainWindow.hide()
+          this.isWindowVisible = false
+        }
+        this.enforceTaskbarHiding(this.mainWindow)
         this.mainWindow.setAlwaysOnTop(true)
-        console.log("Window is now visible and centered")
+        this.applyCaptureExclusion(this.mainWindow)
+        this.applyOverlayInteractionMode(this.mainWindow)
+        if (this.startVisible) {
+          console.log("Window is now visible and centered")
+        }
       }
     })
 
@@ -142,11 +218,23 @@ export class WindowHelper {
     this.currentY = bounds.y
 
     this.setupWindowListeners()
-    this.isWindowVisible = true
+    this.isWindowVisible = false
   }
 
   private setupWindowListeners(): void {
     if (!this.mainWindow) return
+
+    this.mainWindow.on("show", () => {
+      if (this.mainWindow && !this.mainWindow.isDestroyed()) {
+        this.enforceTaskbarHiding(this.mainWindow)
+      }
+    })
+
+    this.mainWindow.on("focus", () => {
+      if (this.mainWindow && !this.mainWindow.isDestroyed()) {
+        this.enforceTaskbarHiding(this.mainWindow)
+      }
+    })
 
     this.mainWindow.on("move", () => {
       if (this.mainWindow) {
@@ -209,6 +297,9 @@ export class WindowHelper {
     }
 
     this.mainWindow.showInactive()
+    this.enforceTaskbarHiding(this.mainWindow)
+    this.applyCaptureExclusion(this.mainWindow)
+    this.applyOverlayInteractionMode(this.mainWindow)
 
     this.isWindowVisible = true
   }
@@ -260,9 +351,14 @@ export class WindowHelper {
     }
 
     this.centerWindow()
-    this.mainWindow.show()
-    this.mainWindow.focus()
+    this.mainWindow.showInactive()
+    if (!this.avoidFocusByDefault && !this.overlayClickThrough) {
+      this.mainWindow.focus()
+    }
+    this.enforceTaskbarHiding(this.mainWindow)
     this.mainWindow.setAlwaysOnTop(true)
+    this.applyCaptureExclusion(this.mainWindow)
+    this.applyOverlayInteractionMode(this.mainWindow)
     this.isWindowVisible = true
     
     console.log(`Window centered and shown`)

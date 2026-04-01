@@ -1,27 +1,30 @@
 import React, { useState, useEffect, useRef } from "react"
 import { IoLogOutOutline } from "react-icons/io5"
-import { Dialog, DialogContent, DialogClose } from "../ui/dialog"
 
 interface QueueCommandsProps {
   onTooltipVisibilityChange: (visible: boolean, height: number) => void
   screenshots: Array<{ path: string; preview: string }>
   onChatToggle: () => void
   onSettingsToggle: () => void
+  hotkeys: {
+    screenshot: string
+    solve: string
+    openChat: string
+    sttToggle: string
+  }
 }
 
 const QueueCommands: React.FC<QueueCommandsProps> = ({
   onTooltipVisibilityChange,
   screenshots,
   onChatToggle,
-  onSettingsToggle
+  onSettingsToggle,
+  hotkeys
 }) => {
   const [isTooltipVisible, setIsTooltipVisible] = useState(false)
   const tooltipRef = useRef<HTMLDivElement>(null)
   const [isRecording, setIsRecording] = useState(false)
-  const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null)
-  const [audioResult, setAudioResult] = useState<string | null>(null)
-  const chunks = useRef<Blob[]>([])
-  // Remove all chat-related state, handlers, and the Dialog overlay from this file.
+  const [isToggleBusy, setIsToggleBusy] = useState(false)
 
   useEffect(() => {
     let tooltipHeight = 0
@@ -30,6 +33,14 @@ const QueueCommands: React.FC<QueueCommandsProps> = ({
     }
     onTooltipVisibilityChange(isTooltipVisible, tooltipHeight)
   }, [isTooltipVisible])
+
+  useEffect(() => {
+    const cleanup = window.electronAPI.onAudioTranscriptionState((state) => {
+      setIsRecording(state.active)
+    })
+
+    return () => cleanup()
+  }, [])
 
   const handleMouseEnter = () => {
     setIsTooltipVisible(true)
@@ -40,38 +51,17 @@ const QueueCommands: React.FC<QueueCommandsProps> = ({
   }
 
   const handleRecordClick = async () => {
-    if (!isRecording) {
-      // Start recording
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
-        const recorder = new MediaRecorder(stream)
-        recorder.ondataavailable = (e) => chunks.current.push(e.data)
-        recorder.onstop = async () => {
-          const blob = new Blob(chunks.current, { type: chunks.current[0]?.type || 'audio/webm' })
-          chunks.current = []
-          const reader = new FileReader()
-          reader.onloadend = async () => {
-            const base64Data = (reader.result as string).split(',')[1]
-            try {
-              const result = await window.electronAPI.analyzeAudioFromBase64(base64Data, blob.type)
-              setAudioResult(result.text)
-            } catch (err) {
-              setAudioResult('Audio analysis failed.')
-            }
-          }
-          reader.readAsDataURL(blob)
-        }
-        setMediaRecorder(recorder)
-        recorder.start()
-        setIsRecording(true)
-      } catch (err) {
-        setAudioResult('Could not start recording.')
-      }
-    } else {
-      // Stop recording
-      mediaRecorder?.stop()
-      setIsRecording(false)
-      setMediaRecorder(null)
+    if (isToggleBusy) {
+      return
+    }
+
+    setIsToggleBusy(true)
+    try {
+      await window.electronAPI.toggleRealtimeAudioTranscription()
+    } catch (error) {
+      console.error("Failed to toggle realtime transcription:", error)
+    } finally {
+      setIsToggleBusy(false)
     }
   }
 
@@ -116,14 +106,17 @@ const QueueCommands: React.FC<QueueCommandsProps> = ({
           <button
             className={`bg-white/10 hover:bg-white/20 transition-colors rounded-md px-2 py-1 text-[11px] leading-none text-white/70 flex items-center gap-1 ${isRecording ? 'bg-red-500/70 hover:bg-red-500/90' : ''}`}
             onClick={handleRecordClick}
+            disabled={isToggleBusy}
             type="button"
+            title={`Toggle realtime transcription (${hotkeys.sttToggle})`}
           >
             {isRecording ? (
-              <span className="animate-pulse">● Stop Recording</span>
+              <span className="animate-pulse">● Stop STT</span>
             ) : (
-              <span>🎤 Record Voice</span>
+              <span>🎤 Start STT</span>
             )}
           </button>
+          <span className="text-[10px] text-white/60">{hotkeys.sttToggle}</span>
         </div>
 
         {/* Chat Button */}
@@ -132,9 +125,11 @@ const QueueCommands: React.FC<QueueCommandsProps> = ({
             className="bg-white/10 hover:bg-white/20 transition-colors rounded-md px-2 py-1 text-[11px] leading-none text-white/70 flex items-center gap-1"
             onClick={onChatToggle}
             type="button"
+            title={`Open chat (${hotkeys.openChat})`}
           >
             💬 Chat
           </button>
+          <span className="text-[10px] text-white/60">{hotkeys.openChat}</span>
         </div>
 
         {/* Settings Button */}
@@ -194,10 +189,7 @@ const QueueCommands: React.FC<QueueCommandsProps> = ({
                         <span className="truncate">Take Screenshot</span>
                         <div className="flex gap-1 flex-shrink-0">
                           <span className="bg-white/10 px-1.5 py-0.5 rounded text-[10px] leading-none">
-                            ⌘
-                          </span>
-                          <span className="bg-white/10 px-1.5 py-0.5 rounded text-[10px] leading-none">
-                            H
+                            {hotkeys.screenshot}
                           </span>
                         </div>
                       </div>
@@ -214,10 +206,7 @@ const QueueCommands: React.FC<QueueCommandsProps> = ({
                         <span className="truncate">Solve Problem</span>
                         <div className="flex gap-1 flex-shrink-0">
                           <span className="bg-white/10 px-1.5 py-0.5 rounded text-[10px] leading-none">
-                            ⌘
-                          </span>
-                          <span className="bg-white/10 px-1.5 py-0.5 rounded text-[10px] leading-none">
-                            ↵
+                            {hotkeys.solve}
                           </span>
                         </div>
                       </div>
@@ -225,6 +214,21 @@ const QueueCommands: React.FC<QueueCommandsProps> = ({
                         Generate a solution based on the current problem.
                       </p>
                     </div>
+
+                      {/* Realtime STT Command */}
+                      <div className="space-y-1">
+                        <div className="flex items-center justify-between">
+                          <span className="truncate">Realtime Audio STT</span>
+                          <div className="flex gap-1 flex-shrink-0">
+                            <span className="bg-white/10 px-1.5 py-0.5 rounded text-[10px] leading-none">
+                              {hotkeys.sttToggle}
+                            </span>
+                          </div>
+                        </div>
+                        <p className="text-[10px] leading-relaxed text-white/70 truncate">
+                          Toggle live speech-to-text capture and send transcript into the interview context.
+                        </p>
+                      </div>
                   </div>
                 </div>
               </div>
@@ -244,14 +248,6 @@ const QueueCommands: React.FC<QueueCommandsProps> = ({
           <IoLogOutOutline className="w-4 h-4" />
         </button>
       </div>
-      {/* Audio Result Display */}
-      {audioResult && (
-        <div className="mt-2 p-2 bg-white/10 rounded text-white text-xs max-w-md">
-          <span className="font-semibold">Audio Result:</span> {audioResult}
-        </div>
-      )}
-      {/* Chat Dialog Overlay */}
-      {/* Remove the Dialog component */}
     </div>
   )
 }
