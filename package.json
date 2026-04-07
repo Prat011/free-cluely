@@ -155,5 +155,8 @@
     "tailwind-merge": "^2.5.4",
     "tesseract.js": "^5.0.5",
     "uuid": "^11.0.3"
-  }
+  },
+  "bin": {
+  "start-cluely": "./start.sh"
+}
 }
