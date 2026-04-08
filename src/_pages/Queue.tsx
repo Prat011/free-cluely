@@ -11,6 +11,34 @@ import {
 import QueueCommands from "../components/Queue/QueueCommands"
 import ModelSelector from "../components/ui/ModelSelector"
 
+// Simple markdown to HTML converter (no external dependency needed)
+function simpleMarkdown(text: string): string {
+  if (!text) return "";
+  let html = text
+    // Escape HTML
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    // Headers
+    .replace(/^### (.+)$/gm, "<strong>$1</strong>")
+    .replace(/^## (.+)$/gm, "<strong style='font-size:1.1em'>$1</strong>")
+    .replace(/^# (.+)$/gm, "<strong style='font-size:1.2em'>$1</strong>")
+    // Bold and italic
+    .replace(/\*\*\*(.+?)\*\*\*/g, "<strong><em>$1</em></strong>")
+    .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+    .replace(/\*(.+?)\*/g, "<em>$1</em>")
+    // Inline code
+    .replace(/`([^`]+)`/g, "<code style='background:rgba(0,0,0,0.1);padding:1px 4px;border-radius:3px;font-size:0.9em'>$1</code>")
+    // Bullet points
+    .replace(/^\* (.+)$/gm, "• $1")
+    .replace(/^- (.+)$/gm, "• $1")
+    // Numbered lists
+    .replace(/^\d+\. (.+)$/gm, "  $1")
+    // Line breaks
+    .replace(/\n/g, "<br/>")
+  return html;
+}
+
 interface QueueProps {
   setView: React.Dispatch<React.SetStateAction<"queue" | "solutions" | "debug">>
 }
@@ -28,13 +56,13 @@ const Queue: React.FC<QueueProps> = ({ setView }) => {
   const contentRef = useRef<HTMLDivElement>(null)
 
   const [chatInput, setChatInput] = useState("")
-  const [chatMessages, setChatMessages] = useState<{role: "user"|"gemini", text: string}[]>([])
+  const [chatMessages, setChatMessages] = useState<{ role: "user" | "gemini", text: string }[]>([])
   const [chatLoading, setChatLoading] = useState(false)
   const [isChatOpen, setIsChatOpen] = useState(false)
   const chatInputRef = useRef<HTMLInputElement>(null)
-  
+
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
-  const [currentModel, setCurrentModel] = useState<{ provider: string; model: string }>({ provider: "gemini", model: "gemini-3-pro-preview" })
+  const [currentModel, setCurrentModel] = useState<{ provider: string; model: string }>({ provider: "gemini", model: "gemini-2.5-flash-preview-05-20" })
 
   const barRef = useRef<HTMLDivElement>(null)
 
@@ -88,15 +116,32 @@ const Queue: React.FC<QueueProps> = ({ setView }) => {
 
   const handleChatSend = async () => {
     if (!chatInput.trim()) return
-    setChatMessages((msgs) => [...msgs, { role: "user", text: chatInput }])
+    // Add empty response placeholder for streaming
+    setChatMessages((msgs) => [...msgs, { role: "user", text: chatInput }, { role: "gemini", text: "" }])
     setChatLoading(true)
+    const inputPayload = chatInput
     setChatInput("")
+
+    const unsub = window.electronAPI.onChatStream((chunk: string) => {
+      setChatLoading(false); // Stop loading animation when first chunk arrives
+      setChatMessages((msgs) => {
+        const newMsgs = [...msgs]
+        const last = newMsgs[newMsgs.length - 1]
+        if (last && last.role === "gemini") {
+          last.text += chunk
+        } else {
+          newMsgs.push({ role: "gemini", text: chunk })
+        }
+        return newMsgs
+      })
+    })
+
     try {
-      const response = await window.electronAPI.invoke("gemini-chat", chatInput)
-      setChatMessages((msgs) => [...msgs, { role: "gemini", text: response }])
+      await window.electronAPI.invoke("gemini-chat-stream", inputPayload)
     } catch (err) {
       setChatMessages((msgs) => [...msgs, { role: "gemini", text: "Error: " + String(err) }])
     } finally {
+      unsub()
       setChatLoading(false)
       chatInputRef.current?.focus()
     }
@@ -108,6 +153,11 @@ const Queue: React.FC<QueueProps> = ({ setView }) => {
       try {
         const config = await window.electronAPI.getCurrentLlmConfig();
         setCurrentModel({ provider: config.provider, model: config.model });
+
+        const storedUserInfo = localStorage.getItem("about_you_context");
+        if (storedUserInfo) {
+          window.electronAPI.invoke("update-user-info", storedUserInfo).catch(console.error);
+        }
       } catch (error) {
         console.error('Error loading current model config:', error);
       }
@@ -175,9 +225,29 @@ const Queue: React.FC<QueueProps> = ({ setView }) => {
         // Get the latest screenshot path
         const latest = data?.path || (Array.isArray(data) && data.length > 0 && data[data.length - 1]?.path);
         if (latest) {
+          // Add empty response placeholder for streaming
+          setChatMessages((msgs) => [...msgs, { role: "gemini", text: "" }]);
+
+          const unsubImg = window.electronAPI.onImageStream((chunk: string) => {
+            setChatLoading(false); // Stop loading animation when first chunk arrives
+            setChatMessages((msgs) => {
+              const newMsgs = [...msgs]
+              const last = newMsgs[newMsgs.length - 1]
+              if (last && last.role === "gemini") {
+                last.text += chunk
+              } else {
+                newMsgs.push({ role: "gemini", text: chunk })
+              }
+              return newMsgs
+            })
+          })
+
           // Call the LLM to process the screenshot
-          const response = await window.electronAPI.invoke("analyze-image-file", latest);
-          setChatMessages((msgs) => [...msgs, { role: "gemini", text: response.text }]);
+          try {
+            await window.electronAPI.invoke("analyze-image-file-stream", latest);
+          } finally {
+            unsubImg()
+          }
         }
       } catch (err) {
         setChatMessages((msgs) => [...msgs, { role: "gemini", text: "Error: " + String(err) }]);
@@ -206,10 +276,10 @@ const Queue: React.FC<QueueProps> = ({ setView }) => {
   const handleModelChange = (provider: "ollama" | "gemini", model: string) => {
     setCurrentModel({ provider, model })
     // Update chat messages to reflect the model change
-    const modelName = provider === "ollama" ? model : "Gemini 3 Pro"
-    setChatMessages((msgs) => [...msgs, { 
-      role: "gemini", 
-      text: `🔄 Switched to ${provider === "ollama" ? "🏠" : "☁️"} ${modelName}. Ready for your questions!` 
+    const modelName = provider === "ollama" ? model : "Gemini 2.5 Flash"
+    setChatMessages((msgs) => [...msgs, {
+      role: "gemini",
+      text: `🔄 Switched to ${provider === "ollama" ? "🏠" : "☁️"} ${modelName}. Ready for your questions!`
     }])
   }
 
@@ -249,79 +319,82 @@ const Queue: React.FC<QueueProps> = ({ setView }) => {
               <ModelSelector onModelChange={handleModelChange} onChatOpen={() => setIsChatOpen(true)} />
             </div>
           )}
-          
+
           {/* Conditional Chat Interface */}
           {isChatOpen && (
-            <div className="mt-4 w-full mx-auto liquid-glass chat-container p-4 flex flex-col">
-            <div className="flex-1 overflow-y-auto mb-3 p-3 rounded-lg bg-white/10 backdrop-blur-md max-h-64 min-h-[120px] glass-content border border-white/20 shadow-lg">
-              {chatMessages.length === 0 ? (
-                <div className="text-sm text-gray-600 text-center mt-8">
-                  💬 Chat with {currentModel.provider === "ollama" ? "🏠" : "☁️"} {currentModel.model}
-                  <br />
-                  <span className="text-xs text-gray-500">Take a screenshot (Cmd+H) for automatic analysis</span>
-                  <br />
-                  <span className="text-xs text-gray-500">Click ⚙️ Models to switch AI providers</span>
-                </div>
-              ) : (
-                chatMessages.map((msg, idx) => (
-                  <div
-                    key={idx}
-                    className={`w-full flex ${msg.role === "user" ? "justify-end" : "justify-start"} mb-3`}
-                  >
+            <div className="mt-4 w-full mx-auto liquid-glass chat-container p-4 flex flex-col bg-black/20">
+              <div className="flex-1 overflow-y-auto mb-3 p-3 rounded-lg bg-black/40 backdrop-blur-md max-h-64 min-h-[120px] glass-content border border-black/40 shadow-lg">
+                {chatMessages.length === 0 ? (
+                  <div className="text-sm text-gray-600 text-center mt-8">
+                    💬 Chat with {currentModel.provider === "ollama" ? "🏠" : "☁️"} {currentModel.model}
+                    <br />
+                    <span className="text-xs text-gray-500">Take a screenshot (Cmd+H) for automatic analysis</span>
+                    <br />
+                    <span className="text-xs text-gray-500">Click ⚙️ Models to switch AI providers</span>
+                  </div>
+                ) : (
+                  chatMessages.map((msg, idx) => (
                     <div
-                      className={`max-w-[80%] px-3 py-1.5 rounded-xl text-xs shadow-md backdrop-blur-sm border ${
-                        msg.role === "user" 
-                          ? "bg-gray-700/80 text-gray-100 ml-12 border-gray-600/40" 
-                          : "bg-white/85 text-gray-700 mr-12 border-gray-200/50"
-                      }`}
-                      style={{ wordBreak: "break-word", lineHeight: "1.4" }}
+                      key={idx}
+                      className={`w-full flex ${msg.role === "user" ? "justify-end" : "justify-start"} mb-3`}
                     >
-                      {msg.text}
+                      <div
+                        className={`max-w-[80%] px-3 py-1.5 rounded-xl text-xs shadow-md backdrop-blur-sm border ${msg.role === "user"
+                          ? "bg-black/90 text-white border-black/80"
+                          : "bg-black/90 text-white border-black/80"
+                          }`}
+                        style={{ wordBreak: "break-word", lineHeight: "1.4" }}
+                      >
+                        {msg.role === "user" ? (
+                          msg.text
+                        ) : (
+                          <span dangerouslySetInnerHTML={{ __html: simpleMarkdown(msg.text) }} />
+                        )}
+                      </div>
+                    </div>
+                  ))
+                )}
+                {chatLoading && (
+                  <div className="flex justify-start mb-3">
+                    <div className="bg-black/90 text-white px-3 py-1.5 rounded-xl text-xs backdrop-blur-sm border border-black/80 shadow-md mr-12">
+                      <span className="inline-flex items-center">
+                        <span className="animate-pulse text-gray-400">●</span>
+                        <span className="animate-pulse animation-delay-200 text-gray-400">●</span>
+                        <span className="animate-pulse animation-delay-400 text-gray-400">●</span>
+                        <span className="ml-2">{currentModel.model} is replying...</span>
+                      </span>
                     </div>
                   </div>
-                ))
-              )}
-              {chatLoading && (
-                <div className="flex justify-start mb-3">
-                  <div className="bg-white/85 text-gray-600 px-3 py-1.5 rounded-xl text-xs backdrop-blur-sm border border-gray-200/50 shadow-md mr-12">
-                    <span className="inline-flex items-center">
-                      <span className="animate-pulse text-gray-400">●</span>
-                      <span className="animate-pulse animation-delay-200 text-gray-400">●</span>
-                      <span className="animate-pulse animation-delay-400 text-gray-400">●</span>
-                      <span className="ml-2">{currentModel.model} is replying...</span>
-                    </span>
-                  </div>
-                </div>
-              )}
-            </div>
-            <form
-              className="flex gap-2 items-center glass-content"
-              onSubmit={e => {
-                e.preventDefault();
-                handleChatSend();
-              }}
-            >
-              <input
-                ref={chatInputRef}
-                className="flex-1 rounded-lg px-3 py-2 bg-white/25 backdrop-blur-md text-gray-800 placeholder-gray-500 text-xs focus:outline-none focus:ring-1 focus:ring-gray-400/60 border border-white/40 shadow-lg transition-all duration-200"
-                placeholder="Type your message..."
-                value={chatInput}
-                onChange={e => setChatInput(e.target.value)}
-                disabled={chatLoading}
-              />
-              <button
-                type="submit"
-                className="p-2 rounded-lg bg-gray-600/80 hover:bg-gray-700/80 border border-gray-500/60 flex items-center justify-center transition-all duration-200 backdrop-blur-sm shadow-lg disabled:opacity-50"
-                disabled={chatLoading || !chatInput.trim()}
-                tabIndex={-1}
-                aria-label="Send"
+                )}
+              </div>
+              <form
+                className="flex gap-2 items-center glass-content"
+                onSubmit={e => {
+                  e.preventDefault();
+                  handleChatSend();
+                }}
               >
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="white" className="w-4 h-4">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 19.5l15-7.5-15-7.5v6l10 1.5-10 1.5v6z" />
-                </svg>
-              </button>
-            </form>
-          </div>
+                <input
+                  ref={chatInputRef}
+                  className="flex-1 rounded-lg px-3 py-2 bg-black/60 backdrop-blur-md text-white placeholder-gray-400 text-xs focus:outline-none focus:ring-1 focus:ring-black/80 border border-black/40 shadow-lg transition-all duration-200"
+                  placeholder="Type your message..."
+                  value={chatInput}
+                  onChange={e => setChatInput(e.target.value)}
+                  disabled={chatLoading}
+                />
+                <button
+                  type="submit"
+                  className="p-2 rounded-lg bg-gray-600/80 hover:bg-gray-700/80 border border-gray-500/60 flex items-center justify-center transition-all duration-200 backdrop-blur-sm shadow-lg disabled:opacity-50"
+                  disabled={chatLoading || !chatInput.trim()}
+                  tabIndex={-1}
+                  aria-label="Send"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="white" className="w-4 h-4">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 19.5l15-7.5-15-7.5v6l10 1.5-10 1.5v6z" />
+                  </svg>
+                </button>
+              </form>
+            </div>
           )}
         </div>
       </div>

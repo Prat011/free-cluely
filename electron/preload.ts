@@ -31,17 +31,33 @@ interface ElectronAPI {
   moveWindowUp: () => Promise<void>
   moveWindowDown: () => Promise<void>
   analyzeAudioFromBase64: (data: string, mimeType: string) => Promise<{ text: string; timestamp: number }>
+  analyzeAudioFromBase64Stream: (data: string, mimeType: string) => Promise<{ text: string; timestamp: number }>
   analyzeAudioFile: (path: string) => Promise<{ text: string; timestamp: number }>
   analyzeImageFile: (path: string) => Promise<void>
   quitApp: () => Promise<void>
-  
+
+  // Window Controls
+  hideWindow: () => Promise<void>
+  showWindow: () => Promise<void>
+  processScreenshots: () => Promise<void>
+  resetView: () => Promise<void>
+
+  // System audio capture
+  getDesktopSources: () => Promise<Array<{ id: string; name: string }>>
+  onToggleRecording: (callback: () => void) => () => void
+
   // LLM Model Management
   getCurrentLlmConfig: () => Promise<{ provider: "ollama" | "gemini"; model: string; isOllama: boolean }>
   getAvailableOllamaModels: () => Promise<string[]>
   switchToOllama: (model?: string, url?: string) => Promise<{ success: boolean; error?: string }>
   switchToGemini: (apiKey?: string) => Promise<{ success: boolean; error?: string }>
   testLlmConnection: () => Promise<{ success: boolean; error?: string }>
-  
+  updateUserInfo: (info: string) => Promise<void>
+
+  onChatStream: (callback: (chunk: string) => void) => () => void
+  onAudioStream: (callback: (chunk: string) => void) => () => void
+  onImageStream: (callback: (chunk: string) => void) => () => void
+
   invoke: (channel: string, ...args: any[]) => Promise<any>
 }
 
@@ -176,16 +192,50 @@ contextBridge.exposeInMainWorld("electronAPI", {
   moveWindowUp: () => ipcRenderer.invoke("move-window-up"),
   moveWindowDown: () => ipcRenderer.invoke("move-window-down"),
   analyzeAudioFromBase64: (data: string, mimeType: string) => ipcRenderer.invoke("analyze-audio-base64", data, mimeType),
+  analyzeAudioFromBase64Stream: (data: string, mimeType: string) => ipcRenderer.invoke("analyze-audio-base64-stream", data, mimeType),
   analyzeAudioFile: (path: string) => ipcRenderer.invoke("analyze-audio-file", path),
   analyzeImageFile: (path: string) => ipcRenderer.invoke("analyze-image-file", path),
   quitApp: () => ipcRenderer.invoke("quit-app"),
-  
+
+  // System audio capture
+  getDesktopSources: () => ipcRenderer.invoke("get-desktop-sources"),
+  onToggleRecording: (callback: () => void) => {
+    const subscription = () => callback()
+    ipcRenderer.on("toggle-recording", subscription)
+    return () => {
+      ipcRenderer.removeListener("toggle-recording", subscription)
+    }
+  },
+
+  onChatStream: (callback: (chunk: string) => void) => {
+    const subscription = (_: any, chunk: string) => callback(chunk)
+    ipcRenderer.on("chat-stream-chunk", subscription)
+    return () => {
+      ipcRenderer.removeListener("chat-stream-chunk", subscription)
+    }
+  },
+  onAudioStream: (callback: (chunk: string) => void) => {
+    const subscription = (_: any, chunk: string) => callback(chunk)
+    ipcRenderer.on("audio-stream-chunk", subscription)
+    return () => {
+      ipcRenderer.removeListener("audio-stream-chunk", subscription)
+    }
+  },
+  onImageStream: (callback: (chunk: string) => void) => {
+    const subscription = (_: any, chunk: string) => callback(chunk)
+    ipcRenderer.on("image-stream-chunk", subscription)
+    return () => {
+      ipcRenderer.removeListener("image-stream-chunk", subscription)
+    }
+  },
+
   // LLM Model Management
   getCurrentLlmConfig: () => ipcRenderer.invoke("get-current-llm-config"),
   getAvailableOllamaModels: () => ipcRenderer.invoke("get-available-ollama-models"),
   switchToOllama: (model?: string, url?: string) => ipcRenderer.invoke("switch-to-ollama", model, url),
-  switchToGemini: (apiKey?: string) => ipcRenderer.invoke("switch-to-gemini", apiKey),
+  switchToGemini: (apiKey?: string, modelName?: string) => ipcRenderer.invoke("switch-to-gemini", apiKey, modelName),
   testLlmConnection: () => ipcRenderer.invoke("test-llm-connection"),
-  
+  updateUserInfo: (info: string) => ipcRenderer.invoke("update-user-info", info),
+
   invoke: (channel: string, ...args: any[]) => ipcRenderer.invoke(channel, ...args)
 } as ElectronAPI)

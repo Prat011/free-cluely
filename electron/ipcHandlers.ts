@@ -59,6 +59,18 @@ export function initializeIpcHandlers(appState: AppState): void {
     appState.toggleMainWindow()
   })
 
+  ipcMain.handle("show-window", async () => {
+    appState.showMainWindow()
+  })
+
+  ipcMain.handle("hide-window", async () => {
+    appState.hideMainWindow()
+  })
+
+  ipcMain.handle("process-screenshots", async () => {
+    await appState.processingHelper.processScreenshots()
+  })
+
   ipcMain.handle("reset-queues", async () => {
     try {
       appState.clearQueues()
@@ -77,6 +89,18 @@ export function initializeIpcHandlers(appState: AppState): void {
       return result
     } catch (error: any) {
       console.error("Error in analyze-audio-base64 handler:", error)
+      throw error
+    }
+  })
+
+  ipcMain.handle("analyze-audio-base64-stream", async (event, data: string, mimeType: string) => {
+    try {
+      const result = await appState.processingHelper.processAudioBase64Stream(data, mimeType, (chunk) => {
+        event.sender.send("audio-stream-chunk", chunk)
+      })
+      return result
+    } catch (error: any) {
+      console.error("Error in analyze-audio-base64-stream handler:", error)
       throw error
     }
   })
@@ -103,6 +127,18 @@ export function initializeIpcHandlers(appState: AppState): void {
     }
   })
 
+  ipcMain.handle("analyze-image-file-stream", async (event, path: string) => {
+    try {
+      const result = await appState.processingHelper.getLLMHelper().analyzeImageFileStream(path, (chunk) => {
+        event.sender.send("image-stream-chunk", chunk)
+      })
+      return result
+    } catch (error: any) {
+      console.error("Error in analyze-image-file-stream handler:", error)
+      throw error
+    }
+  })
+
   ipcMain.handle("gemini-chat", async (event, message: string) => {
     try {
       const result = await appState.processingHelper.getLLMHelper().chatWithGemini(message);
@@ -112,6 +148,18 @@ export function initializeIpcHandlers(appState: AppState): void {
       throw error;
     }
   });
+
+  ipcMain.handle("gemini-chat-stream", async (event, message: string) => {
+    try {
+      const result = await appState.processingHelper.getLLMHelper().chatWithGeminiStream(message, (chunk) => {
+        event.sender.send("chat-stream-chunk", chunk)
+      });
+      return result;
+    } catch (error: any) {
+      console.error("Error in gemini-chat-stream handler:", error)
+      throw error
+    }
+  })
 
   ipcMain.handle("quit-app", () => {
     app.quit()
@@ -175,10 +223,10 @@ export function initializeIpcHandlers(appState: AppState): void {
     }
   });
 
-  ipcMain.handle("switch-to-gemini", async (_, apiKey?: string) => {
+  ipcMain.handle("switch-to-gemini", async (_, apiKey?: string, modelName?: string) => {
     try {
       const llmHelper = appState.processingHelper.getLLMHelper();
-      await llmHelper.switchToGemini(apiKey);
+      await llmHelper.switchToGemini(apiKey, modelName);
       return { success: true };
     } catch (error: any) {
       console.error("Error switching to Gemini:", error);
@@ -194,6 +242,25 @@ export function initializeIpcHandlers(appState: AppState): void {
     } catch (error: any) {
       console.error("Error testing LLM connection:", error);
       return { success: false, error: error.message };
+    }
+  });
+
+  ipcMain.handle("update-user-info", async (_, userInfo: string) => {
+    appState.processingHelper.getLLMHelper().setUserInfo(userInfo);
+  });
+
+  // Desktop capturer for system audio recording
+  ipcMain.handle("get-desktop-sources", async () => {
+    try {
+      const { desktopCapturer } = require("electron")
+      const sources = await desktopCapturer.getSources({ types: ['screen'] });
+      return sources.map((source: any) => ({
+        id: source.id,
+        name: source.name
+      }));
+    } catch (error: any) {
+      console.error("Error getting desktop sources:", error);
+      return [];
     }
   });
 }

@@ -13,6 +13,7 @@ If you’re looking for a hosted desktop recording API, consider checking out [R
 - Git installed on your computer  
 - **Either** a Gemini API key (get it from [Google AI Studio](https://makersuite.google.com/app/apikey))
 - **Or** Ollama installed locally for private LLM usage (recommended for privacy)
+- *(Optional)* A free **Deepgram API key** for Live Voice Transcription & Translation
 
 ### Installation Steps
 
@@ -114,7 +115,8 @@ The built app will be in the `release` folder.
 3. **Keyboard Shortcuts**:
    - `Cmd/Ctrl + B`: Toggle window visibility
    - `Cmd/Ctrl + H`: Take screenshot
-   - 'Cmd/Enter': Get solution
+   - `Cmd/Ctrl + Shift + R`: Toggle Live Voice Recording & Transcription
+   - `Cmd/Enter`: Get solution
    - `Cmd/Ctrl + Arrow Keys`: Move window
 
 ## 🔧 Troubleshooting
@@ -169,10 +171,12 @@ If you see other errors:
 - AI analyzes images, documents, presentations, or problems
 - Get instant explanations, answers, and solutions
 
-### **Audio Intelligence**
-- Process audio files and recordings
-- Real-time transcription and analysis
-- Perfect for meeting notes and content review
+### **Audio Intelligence & Live Transcription**
+- Trigger live voice recording instantly with `Cmd/Ctrl + Shift + R`
+- Captures both **system audio** (meetings) and **microphone** simultaneously
+- **Real-time Transcription & Translation** powered by Deepgram `nova-3`
+- Instantly translates foreign languages to English (or other targets) live on screen
+- Submits exact transcripts directly to Gemini for instantaneous insights
 
 ### **Contextual Chat**
 - Chat with AI about anything you see on screen
@@ -230,7 +234,7 @@ If you see other errors:
 ## Technical Details
 
 ### **AI Models Supported**
-- **Gemini 2.0 Flash** - Latest Google AI with vision capabilities
+- **Gemini 2.5 Flash** / **Gemini 3 Flash** / **Gemini 2.5 Flash Lite** - High-speed, high-limit daily requests
 - **Llama 3.2** - Meta's advanced local model via Ollama
 - **CodeLlama** - Specialized coding assistance
 - **Mistral** - Lightweight, fast responses

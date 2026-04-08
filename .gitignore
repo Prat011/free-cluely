@@ -43,6 +43,7 @@ node_modules/
 jspm_packages/
 dist-electron/
 dist/
+release/
 
 # Snowpack dependency directory (https://snowpack.dev/)
 web_modules/
