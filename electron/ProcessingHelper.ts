@@ -3,8 +3,27 @@
 import { AppState } from "./main"
 import { LLMHelper } from "./LLMHelper"
 import dotenv from "dotenv"
+import fs from "fs"
+import path from "path"
 
-dotenv.config()
+const loadEnv = () => {
+  const envPaths = [
+    path.resolve(process.cwd(), ".env"),
+    path.resolve(path.dirname(process.execPath), ".env"),
+    path.resolve(process.resourcesPath || "", ".env")
+  ]
+
+  for (const envPath of envPaths) {
+    if (envPath && fs.existsSync(envPath)) {
+      dotenv.config({ path: envPath })
+      return
+    }
+  }
+
+  dotenv.config()
+}
+
+loadEnv()
 
 const isDev = process.env.NODE_ENV === "development"
 const isDevTest = process.env.IS_DEV_TEST === "true"
