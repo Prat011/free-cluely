@@ -1,0 +1,1091 @@
+
+================ LLM FILLED PROMPT START ================
+[timestamp] 2026-03-31T18:36:43.210Z
+[source] image
+[mode] CODING
+========================================================
+SYSTEM:
+You are an elite competitive programming assistant and AI interview solver.
+
+CORE OBJECTIVE:
+Given noisy OCR or screenshot input, extract the actual coding problem, reconstruct it cleanly, and produce an optimal solution.
+
+CORE BEHAVIOR:
+- You help users practice interviews using their resume and session context.
+- Every input is either:
+  1) A new interview question
+  2) A follow-up question
+  3) A coding/problem-solving prompt (often from screenshots)
+
+CONTEXT USAGE:
+- Always use resume context when relevant
+- Use session history for continuity
+- Adapt answers to user's experience level
+- Resume context may be structured JSON. Read keys and nested sections carefully before answering.
+- Do not invent resume facts that are not present in the provided context.
+
+RESPONSE STYLE:
+- Start directly with the answer. No prefacing like "Sure", "Here is", or "This response".
+- Default to natural spoken interview style in first person ("I", "my", "we").
+- Keep it practical and interview-ready. Avoid fluff and generic coaching text.
+- Do not add markdown separators, titles, or section headers unless explicitly asked.
+- Keep default length around 90-180 words unless the user asks for more depth.
+
+CODING / SCREENSHOT CASE:
+If input contains coding problem:
+1) Extract only relevant problem content from noisy OCR/screenshot text.
+2) Reconstruct problem statement, input/output format, and constraints.
+3) Select the most optimal approach and justify it briefly.
+4) Produce clean interview-level code with complexity and edge-case coverage.
+
+AUDIO CASE:
+- Treat transcribed audio as user input
+- If unclear, infer intent and respond helpfully
+- If transcript contains role labels (e.g., [INTERVIEWER], [YOU]), answer the latest interviewer question.
+- If there is no clear question, produce a concise follow-up clarification question.
+
+IMPORTANT RULES:
+- Do NOT output JSON unless explicitly asked
+- Do NOT switch roles (you are NOT a generic wingman)
+- Keep answers concise but complete
+
+RESUME:
+{
+  "total_files": 3,
+  "files": [
+    {
+      "file_name": "AI_Engineer.pdf",
+      "extension": ".pdf",
+      "content": {
+        "raw_text": "Linearized 1 /L 152916 /H\nO 7 /E 152321 /N 1 /T 152632\nType /XRef /Length 127 /Filter /FlateDecode /DecodeParms\nColumns 5 /Predictor 12\nInfo 1 0 R /Root 5 0 R /Size 114 /Prev 152633                /ID\n26afa53a7fafd12301ca21fab34124dd\nc707199c5fba33e28ab64ff7a6338246\nendstream\nNames 113 0 R /OpenAction 58 0 R /Outlines 109 0 R /PageMode /UseOutlines /Pages 81 0 R /Type /Catalog\nFilter /FlateDecode /S 36 /O 115 /Length 107\nendstream\n59 0 R 60 0 R 61 0 R 62 0 R 63 0 R 64 0 R 65 0 R\nContents 8 0 R /MediaBox\n0 0 612 792\nParent 81 0 R /Resources 66 0 R /Type /Page\nFilter /FlateDecode /Length 4020\nendstream\nFilter /FlateDecode /Length1 766 /Length2 7502 /Length3 0 /Length 8007\nendstream\nFilter /FlateDecode /Length1 748 /Length2 8623 /Length3 0 /Length 9125\nendstream\nFilter /FlateDecode /Length1 2293 /Length2 18356 /Length3 0 /Length 19710\nendstream\nFilter /FlateDecode /Length1 1546 /Length2 8108 /Length3 0 /Length 9123\nendstream\nFilter /FlateDecode /Length1 1833 /Length2 11784 /Length3 0 /Length 12922\ndcswwg5upa\nendstream\nFilter /FlateDecode /Length1 1894 /Length2 12565 /Length3 0 /Length 13741\nIAHb6wj,q@\n3WwSWy/osV\nendstream\nFilter /FlateDecode /Length1 2462 /Length2 21683 /Length3 0 /Length 23104\nendstream\nFilter /FlateDecode /Length1 1668 /Length2 10190 /Length3 0 /Length 11271\nSi.xF7e+JI\nendstream\nFilter /FlateDecode /Length1 1405 /Length2 6188 /Length3 0 /Length 7156\nendstream\nFilter /FlateDecode /Length1 1585 /Length2 10023 /Length3 0 /Length 11065\nendstream\nFilter /FlateDecode /Length1 721 /Length2 958 /Length3 0 /Length 1516\nendstream\nFilter /FlateDecode /Length1 721 /Length2 4672 /Length3 0 /Length 5264\nendstream\nFilter /FlateDecode /Length 742\nendstream\nFilter /FlateDecode /Length 742\nendstream\nFilter /FlateDecode /Length 754\nendstream\nFilter /FlateDecode /Length 711\nendstream\nFilter /FlateDecode /Length 740\nendstream\nFilter /FlateDecode /Length 740\nendstream\nFilter /FlateDecode /Length 900\nendstream\nFilter /FlateDecode /Length 750\nendstream\nFilter /FlateDecode /Length 347\nendstream\nFilter /FlateDecode /Length 372\nendstream\nFilter /FlateDecode /Length 720\nendstream\nFilter /FlateDecode /Length 719\nendstream\nType /ObjStm /Length 3848 /Filter /FlateDecode /N 80 /First 644\nendstream\nAuthor () /CreationDate (D:20260323070014Z) /Creator (LaTeX with hyperref) /Keywords () /ModDate (D:20260323070014Z) /PTEX.Fullbanner (This is pdfTeX, Version 3.141592653-2.6-1.40.26\nTeX Live 2024\nkpathsea version 6.4.0) /Producer (pdfTeX-1.40.26) /Subject () /Title () /Trapped /False\nType /XRef /Length 23 /Filter /FlateDecode /DecodeParms\nColumns 5 /Predictor 12\nSize 3 /ID\n26afa53a7fafd12301ca21fab34124dd\nc707199c5fba33e28ab64ff7a6338246\nendstream\nstartxref",
+        "section_order": [
+          "full_document",
+          "o_7_e_152321_n_1_t_152632"
+        ],
+        "sections": {
+          "full_document": "Linearized 1 /L 152916 /H\nO 7 /E 152321 /N 1 /T 152632\nType /XRef /Length 127 /Filter /FlateDecode /DecodeParms\nColumns 5 /Predictor 12\nInfo 1 0 R /Root 5 0 R /Size 114 /Prev 152633                /ID\n26afa53a7fafd12301ca21fab34124dd\nc707199c5fba33e28ab64ff7a6338246\nendstream\nNames 113 0 R /OpenAction 58 0 R /Outlines 109 0 R /PageMode /UseOutlines /Pages 81 0 R /Type /Catalog\nFilter /FlateDecode /S 36 /O 115 /Length 107\nendstream\n59 0 R 60 0 R 61 0 R 62 0 R 63 0 R 64 0 R 65 0 R\nContents 8 0 R /MediaBox\n0 0 612 792\nParent 81 0 R /Resources 66 0 R /Type /Page\nFilter /FlateDecode /Length 4020\nendstream\nFilter /FlateDecode /Length1 766 /Length2 7502 /Length3 0 /Length 8007\nendstream\nFilter /FlateDecode /Length1 748 /Length2 8623 /Length3 0 /Length 9125\nendstream\nFilter /FlateDecode /Length1 2293 /Length2 18356 /Length3 0 /Length 19710\nendstream\nFilter /FlateDecode /Length1 1546 /Length2 8108 /Length3 0 /Length 9123\nendstream\nFilter /FlateDecode /Length1 1833 /Length2 11784 /Length3 0 /Length 12922\ndcswwg5upa\nendstream\nFilter /FlateDecode /Length1 1894 /Length2 12565 /Length3 0 /Length 13741\nIAHb6wj,q@\n3WwSWy/osV\nendstream\nFilter /FlateDecode /Length1 2462 /Length2 21683 /Length3 0 /Length 23104\nendstream\nFilter /FlateDecode /Length1 1668 /Length2 10190 /Length3 0 /Length 11271\nSi.xF7e+JI\nendstream\nFilter /FlateDecode /Length1 1405 /Length2 6188 /Length3 0 /Length 7156\nendstream\nFilter /FlateDecode /Length1 1585 /Length2 10023 /Length3 0 /Length 11065\nendstream\nFilter /FlateDecode /Length1 721 /Length2 958 /Length3 0 /Length 1516\nendstream\nFilter /FlateDecode /Length1 721 /Length2 4672 /Length3 0 /Length 5264\nendstream\nFilter /FlateDecode /Length 742\nendstream\nFilter /FlateDecode /Length 742\nendstream\nFilter /FlateDecode /Length 754\nendstream\nFilter /FlateDecode /Length 711\nendstream\nFilter /FlateDecode /Length 740\nendstream\nFilter /FlateDecode /Length 740\nendstream\nFilter /FlateDecode /Length 900\nendstream\nFilter /FlateDecode /Length 750\nendstream\nFilter /FlateDecode /Length 347\nendstream\nFilter /FlateDecode /Length 372\nendstream\nFilter /FlateDecode /Length 720\nendstream\nFilter /FlateDecode /Length 719\nendstream\nType /ObjStm /Length 3848 /Filter /FlateDecode /N 80 /First 644\nendstream\nAuthor () /CreationDate (D:20260323070014Z) /Creator (LaTeX with hyperref) /Keywords () /ModDate (D:20260323070014Z) /PTEX.Fullbanner (This is pdfTeX, Version 3.141592653-2.6-1.40.26\nTeX Live 2024\nkpathsea version 6.4.0) /Producer (pdfTeX-1.40.26) /Subject () /Title () /Trapped /False\nType /XRef /Length 23 /Filter /FlateDecode /DecodeParms\nColumns 5 /Predictor 12\nSize 3 /ID\n26afa53a7fafd12301ca21fab34124dd\nc707199c5fba33e28ab64ff7a6338246\nendstream\nstartxref",
+          "o_7_e_152321_n_1_t_152632": "Type /XRef /Length 127 /Filter /FlateDecode /DecodeParms\nColumns 5 /Predictor 12\nInfo 1 0 R /Root 5 0 R /Size 114 /Prev 152633                /ID\n26afa53a7fafd12301ca21fab34124dd\nc707199c5fba33e28ab64ff7a6338246\nendstream\nNames 113 0 R /OpenAction 58 0 R /Outlines 109 0 R /PageMode /UseOutlines /Pages 81 0 R /Type /Catalog\nFilter /FlateDecode /S 36 /O 115 /Length 107\nendstream\n59 0 R 60 0 R 61 0 R 62 0 R 63 0 R 64 0 R 65 0 R\nContents 8 0 R /MediaBox\n0 0 612 792\nParent 81 0 R /Resources 66 0 R /Type /Page\nFilter /FlateDecode /Length 4020\nendstream\nFilter /FlateDecode /Length1 766 /Length2 7502 /Length3 0 /Length 8007\nendstream\nFilter /FlateDecode /Length1 748 /Length2 8623 /Length3 0 /Length 9125\nendstream\nFilter /FlateDecode /Length1 2293 /Length2 18356 /Length3 0 /Length 19710\nendstream\nFilter /FlateDecode /Length1 1546 /Length2 8108 /Length3 0 /Length 9123\nendstream\nFilter /FlateDecode /Length1 1833 /Length2 11784 /Length3 0 /Length 12922\ndcswwg5upa\nendstream\nFilter /FlateDecode /Length1 1894 /Length2 12565 /Length3 0 /Length 13741\nIAHb6wj,q@\n3WwSWy/osV\nendstream\nFilter /FlateDecode /Length1 2462 /Length2 21683 /Length3 0 /Length 23104\nendstream\nFilter /FlateDecode /Length1 1668 /Length2 10190 /Length3 0 /Length 11271\nSi.xF7e+JI\nendstream\nFilter /FlateDecode /Length1 1405 /Length2 6188 /Length3 0 /Length 7156\nendstream\nFilter /FlateDecode /Length1 1585 /Length2 10023 /Length3 0 /Length 11065\nendstream\nFilter /FlateDecode /Length1 721 /Length2 958 /Length3 0 /Length 1516\nendstream\nFilter /FlateDecode /Length1 721 /Length2 4672 /Length3 0 /Length 5264\nendstream\nFilter /FlateDecode /Length 742\nendstream\nFilter /FlateDecode /Length 742\nendstream\nFilter /FlateDecode /Length 754\nendstream\nFilter /FlateDecode /Length 711\nendstream\nFilter /FlateDecode /Length 740\nendstream\nFilter /FlateDecode /Length 740\nendstream\nFilter /FlateDecode /Length 900\nendstream\nFilter /FlateDecode /Length 750\nendstream\nFilter /FlateDecode /Length 347\nendstream\nFilter /FlateDecode /Length 372\nendstream\nFilter /FlateDecode /Length 720\nendstream\nFilter /FlateDecode /Length 719\nendstream\nType /ObjStm /Length 3848 /Filter /FlateDecode /N 80 /First 644\nendstream\nAuthor () /CreationDate (D:20260323070014Z) /Creator (LaTeX with hyperref) /Keywords () /ModDate (D:20260323070014Z) /PTEX.Fullbanner (This is pdfTeX, Version 3.141592653-2.6-1.40.26\nTeX Live 2024\nkpathsea version 6.4.0) /Producer (pdfTeX-1.40.26) /Subject () /Title () /Trapped /False\nType /XRef /Length 23 /Filter /FlateDecode /DecodeParms\nColumns 5 /Predictor 12\nSize 3 /ID\n26afa53a7fafd12301ca21fab34124dd\nc707199c5fba33e28ab64ff7a6338246\nendstream\nstartxref"
+        }
+      }
+    },
+    {
+      "file_name": "AI_Engineer.pdf",
+      "extension": ".pdf",
+      "content": {
+        "raw_text": "Linearized 1 /L 152916 /H\nO 7 /E 152321 /N 1 /T 152632\nType /XRef /Length 127 /Filter /FlateDecode /DecodeParms\nColumns 5 /Predictor 12\nInfo 1 0 R /Root 5 0 R /Size 114 /Prev 152633                /ID\n26afa53a7fafd12301ca21fab34124dd\nc707199c5fba33e28ab64ff7a6338246\nendstream\nNames 113 0 R /OpenAction 58 0 R /Outlines 109 0 R /PageMode /UseOutlines /Pages 81 0 R /Type /Catalog\nFilter /FlateDecode /S 36 /O 115 /Length 107\nendstream\n59 0 R 60 0 R 61 0 R 62 0 R 63 0 R 64 0 R 65 0 R\nContents 8 0 R /MediaBox\n0 0 612 792\nParent 81 0 R /Resources 66 0 R /Type /Page\nFilter /FlateDecode /Length 4020\nendstream\nFilter /FlateDecode /Length1 766 /Length2 7502 /Length3 0 /Length 8007\nendstream\nFilter /FlateDecode /Length1 748 /Length2 8623 /Length3 0 /Length 9125\nendstream\nFilter /FlateDecode /Length1 2293 /Length2 18356 /Length3 0 /Length 19710\nendstream\nFilter /FlateDecode /Length1 1546 /Length2 8108 /Length3 0 /Length 9123\nendstream\nFilter /FlateDecode /Length1 1833 /Length2 11784 /Length3 0 /Length 12922\ndcswwg5upa\nendstream\nFilter /FlateDecode /Length1 1894 /Length2 12565 /Length3 0 /Length 13741\nIAHb6wj,q@\n3WwSWy/osV\nendstream\nFilter /FlateDecode /Length1 2462 /Length2 21683 /Length3 0 /Length 23104\nendstream\nFilter /FlateDecode /Length1 1668 /Length2 10190 /Length3 0 /Length 11271\nSi.xF7e+JI\nendstream\nFilter /FlateDecode /Length1 1405 /Length2 6188 /Length3 0 /Length 7156\nendstream\nFilter /FlateDecode /Length1 1585 /Length2 10023 /Length3 0 /Length 11065\nendstream\nFilter /FlateDecode /Length1 721 /Length2 958 /Length3 0 /Length 1516\nendstream\nFilter /FlateDecode /Length1 721 /Length2 4672 /Length3 0 /Length 5264\nendstream\nFilter /FlateDecode /Length 742\nendstream\nFilter /FlateDecode /Length 742\nendstream\nFilter /FlateDecode /Length 754\nendstream\nFilter /FlateDecode /Length 711\nendstream\nFilter /FlateDecode /Length 740\nendstream\nFilter /FlateDecode /Length 740\nendstream\nFilter /FlateDecode /Length 900\nendstream\nFilter /FlateDecode /Length 750\nendstream\nFilter /FlateDecode /Length 347\nendstream\nFilter /FlateDecode /Length 372\nendstream\nFilter /FlateDecode /Length 720\nendstream\nFilter /FlateDecode /Length 719\nendstream\nType /ObjStm /Length 3848 /Filter /FlateDecode /N 80 /First 644\nendstream\nAuthor () /CreationDate (D:20260323070014Z) /Creator (LaTeX with hyperref) /Keywords () /ModDate (D:20260323070014Z) /PTEX.Fullbanner (This is pdfTeX, Version 3.141592653-2.6-1.40.26\nTeX Live 2024\nkpathsea version 6.4.0) /Producer (pdfTeX-1.40.26) /Subject () /Title () /Trapped /False\nType /XRef /Length 23 /Filter /FlateDecode /DecodeParms\nColumns 5 /Predictor 12\nSize 3 /ID\n26afa53a7fafd12301ca21fab34124dd\nc707199c5fba33e28ab64ff7a6338246\nendstream\nstartxref",
+        "section_order": [
+          "full_document",
+          "o_7_e_152321_n_1_t_152632"
+        ],
+        "sections": {
+          "full_document": "Linearized 1 /L 152916 /H\nO 7 /E 152321 /N 1 /T 152632\nType /XRef /Length 127 /Filter /FlateDecode /DecodeParms\nColumns 5 /Predictor 12\nInfo 1 0 R /Root 5 0 R /Size 114 /Prev 152633                /ID\n26afa53a7fafd12301ca21fab34124dd\nc707199c5fba33e28ab64ff7a6338246\nendstream\nNames 113 0 R /OpenAction 58 0 R /Outlines 109 0 R /PageMode /UseOutlines /Pages 81 0 R /Type /Catalog\nFilter /FlateDecode /S 36 /O 115 /Length 107\nendstream\n59 0 R 60 0 R 61 0 R 62 0 R 63 0 R 64 0 R 65 0 R\nContents 8 0 R /MediaBox\n0 0 612 792\nParent 81 0 R /Resources 66 0 R /Type /Page\nFilter /FlateDecode /Length 4020\nendstream\nFilter /FlateDecode /Length1 766 /Length2 7502 /Length3 0 /Length 8007\nendstream\nFilter /FlateDecode /Length1 748 /Length2 8623 /Length3 0 /Length 9125\nendstream\nFilter /FlateDecode /Length1 2293 /Length2 18356 /Length3 0 /Length 19710\nendstream\nFilter /FlateDecode /Length1 1546 /Length2 8108 /Length3 0 /Length 9123\nendstream\nFilter /FlateDecode /Length1 1833 /Length2 11784 /Length3 0 /Length 12922\ndcswwg5upa\nendstream\nFilter /FlateDecode /Length1 1894 /Length2 12565 /Length3 0 /Length 13741\nIAHb6wj,q@\n3WwSWy/osV\nendstream\nFilter /FlateDecode /Length1 2462 /Length2 21683 /Length3 0 /Length 23104\nendstream\nFilter /FlateDecode /Length1 1668 /Length2 10190 /Length3 0 /Length 11271\nSi.xF7e+JI\nendstream\nFilter /FlateDecode /Length1 1405 /Length2 6188 /Length3 0 /Length 7156\nendstream\nFilter /FlateDecode /Length1 1585 /Length2 10023 /Length3 0 /Length 11065\nendstream\nFilter /FlateDecode /Length1 721 /Length2 958 /Length3 0 /Length 1516\nendstream\nFilter /FlateDecode /Length1 721 /Length2 4672 /Length3 0 /Length 5264\nendstream\nFilter /FlateDecode /Length 742\nendstream\nFilter /FlateDecode /Length 742\nendstream\nFilter /FlateDecode /Length 754\nendstream\nFilter /FlateDecode /Length 711\nendstream\nFilter /FlateDecode /Length 740\nendstream\nFilter /FlateDecode /Length 740\nendstream\nFilter /FlateDecode /Length 900\nendstream\nFilter /FlateDecode /Length 750\nendstream\nFilter /FlateDecode /Length 347\nendstream\nFilter /FlateDecode /Length 372\nendstream\nFilter /FlateDecode /Length 720\nendstream\nFilter /FlateDecode /Length 719\nendstream\nType /ObjStm /Length 3848 /Filter /FlateDecode /N 80 /First 644\nendstream\nAuthor () /CreationDate (D:20260323070014Z) /Creator (LaTeX with hyperref) /Keywords () /ModDate (D:20260323070014Z) /PTEX.Fullbanner (This is pdfTeX, Version 3.141592653-2.6-1.40.26\nTeX Live 2024\nkpathsea version 6.4.0) /Producer (pdfTeX-1.40.26) /Subject () /Title () /Trapped /False\nType /XRef /Length 23 /Filter /FlateDecode /DecodeParms\nColumns 5 /Predictor 12\nSize 3 /ID\n26afa53a7fafd12301ca21fab34124dd\nc707199c5fba33e28ab64ff7a6338246\nendstream\nstartxref",
+          "o_7_e_152321_n_1_t_152632": "Type /XRef /Length 127 /Filter /FlateDecode /DecodeParms\nColumns 5 /Predictor 12\nInfo 1 0 R /Root 5 0 R /Size 114 /Prev 152633                /ID\n26afa53a7fafd12301ca21fab34124dd\nc707199c5fba33e28ab64ff7a6338246\nendstream\nNames 113 0 R /OpenAction 58 0 R /Outlines 109 0 R /PageMode /UseOutlines /Pages 81 0 R /Type /Catalog\nFilter /FlateDecode /S 36 /O 115 /Length 107\nendstream\n59 0 R 60 0 R 61 0 R 62 0 R 63 0 R 64 0 R 65 0 R\nContents 8 0 R /MediaBox\n0 0 612 792\nParent 81 0 R /Resources 66 0 R /Type /Page\nFilter /FlateDecode /Length 4020\nendstream\nFilter /FlateDecode /Length1 766 /Length2 7502 /Length3 0 /Length 8007\nendstream\nFilter /FlateDecode /Length1 748 /Length2 8623 /Length3 0 /Length 9125\nendstream\nFilter /FlateDecode /Length1 2293 /Length2 18356 /Length3 0 /Length 19710\nendstream\nFilter /FlateDecode /Length1 1546 /Length2 8108 /Length3 0 /Length 9123\nendstream\nFilter /FlateDecode /Length1 1833 /Length2 11784 /Length3 0 /Length 12922\ndcswwg5upa\nendstream\nFilter /FlateDecode /Length1 1894 /Length2 12565 /Length3 0 /Length 13741\nIAHb6wj,q@\n3WwSWy/osV\nendstream\nFilter /FlateDecode /Length1 2462 /Length2 21683 /Length3 0 /Length 23104\nendstream\nFilter /FlateDecode /Length1 1668 /Length2 10190 /Length3 0 /Length 11271\nSi.xF7e+JI\nendstream\nFilter /FlateDecode /Length1 1405 /Length2 6188 /Length3 0 /Length 7156\nendstream\nFilter /FlateDecode /Length1 1585 /Length2 10023 /Length3 0 /Length 11065\nendstream\nFilter /FlateDecode /Length1 721 /Length2 958 /Length3 0 /Length 1516\nendstream\nFilter /FlateDecode /Length1 721 /Length2 4672 /Length3 0 /Length 5264\nendstream\nFilter /FlateDecode /Length 742\nendstream\nFilter /FlateDecode /Length 742\nendstream\nFilter /FlateDecode /Length 754\nendstream\nFilter /FlateDecode /Length 711\nendstream\nFilter /FlateDecode /Length 740\nendstream\nFilter /FlateDecode /Length 740\nendstream\nFilter /FlateDecode /Length 900\nendstream\nFilter /FlateDecode /Length 750\nendstream\nFilter /FlateDecode /Length 347\nendstream\nFilter /FlateDecode /Length 372\nendstream\nFilter /FlateDecode /Length 720\nendstream\nFilter /FlateDecode /Length 719\nendstream\nType /ObjStm /Length 3848 /Filter /FlateDecode /N 80 /First 644\nendstream\nAuthor () /CreationDate (D:20260323070014Z) /Creator (LaTeX with hyperref) /Keywords () /ModDate (D:20260323070014Z) /PTEX.Fullbanner (This is pdfTeX, Version 3.141592653-2.6-1.40.26\nTeX Live 2024\nkpathsea version 6.4.0) /Producer (pdfTeX-1.40.26) /Subject () /Title () /Trapped /False\nType /XRef /Length 23 /Filter /FlateDecode /DecodeParms\nColumns 5 /Predictor 12\nSize 3 /ID\n26afa53a7fafd12301ca21fab34124dd\nc707199c5fba33e28ab64ff7a6338246\nendstream\nstartxref"
+        }
+      }
+    },
+    {
+      "file_name": "AI_Engineer.pdf",
+      "extension": ".pdf",
+      "content": {
+        "raw_text": "Linearized 1 /L 152916 /H\nO 7 /E 152321 /N 1 /T 152632\nType /XRef /Length 127 /Filter /FlateDecode /DecodeParms\nColumns 5 /Predictor 12\nInfo 1 0 R /Root 5 0 R /Size 114 /Prev 152633                /ID\n26afa53a7fafd12301ca21fab34124dd\nc707199c5fba33e28ab64ff7a6338246\nendstream\nNames 113 0 R /OpenAction 58 0 R /Outlines 109 0 R /PageMode /UseOutlines /Pages 81 0 R /Type /Catalog\nFilter /FlateDecode /S 36 /O 115 /Length 107\nendstream\n59 0 R 60 0 R 61 0 R 62 0 R 63 0 R 64 0 R 65 0 R\nContents 8 0 R /MediaBox\n0 0 612 792\nParent 81 0 R /Resources 66 0 R /Type /Page\nFilter /FlateDecode /Length 4020\nendstream\nFilter /FlateDecode /Length1 766 /Length2 7502 /Length3 0 /Length 8007\nendstream\nFilter /FlateDecode /Length1 748 /Length2 8623 /Length3 0 /Length 9125\nendstream\nFilter /FlateDecode /Length1 2293 /Length2 18356 /Length3 0 /Length 19710\nendstream\nFilter /FlateDecode /Length1 1546 /Length2 8108 /Length3 0 /Length 9123\nendstream\nFilter /FlateDecode /Length1 1833 /Length2 11784 /Length3 0 /Length 12922\ndcswwg5upa\nendstream\nFilter /FlateDecode /Length1 1894 /Length2 12565 /Length3 0 /Length 13741\nIAHb6wj,q@\n3WwSWy/osV\nendstream\nFilter /FlateDecode /Length1 2462 /Length2 21683 /Length3 0 /Length 23104\nendstream\nFilter /FlateDecode /Length1 1668 /Length2 10190 /Length3 0 /Length 11271\nSi.xF7e+JI\nendstream\nFilter /FlateDecode /Length1 1405 /Length2 6188 /Length3 0 /Length 7156\nendstream\nFilter /FlateDecode /Length1 1585 /Length2 10023 /Length3 0 /Length 11065\nendstream\nFilter /FlateDecode /Length1 721 /Length2 958 /Length3 0 /Length 1516\nendstream\nFilter /FlateDecode /Length1 721 /Length2 4672 /Length3 0 /Length 5264\nendstream\nFilter /FlateDecode /Length 742\nendstream\nFilter /FlateDecode /Length 742\nendstream\nFilter /FlateDecode /Length 754\nendstream\nFilter /FlateDecode /Length 711\nendstream\nFilter /FlateDecode /Length 740\nendstream\nFilter /FlateDecode /Length 740\nendstream\nFilter /FlateDecode /Length 900\nendstream\nFilter /FlateDecode /Length 750\nendstream\nFilter /FlateDecode /Length 347\nendstream\nFilter /FlateDecode /Length 372\nendstream\nFilter /FlateDecode /Length 720\nendstream\nFilter /FlateDecode /Length 719\nendstream\nType /ObjStm /Length 3848 /Filter /FlateDecode /N 80 /First 644\nendstream\nAuthor () /CreationDate (D:20260323070014Z) /Creator (LaTeX with hyperref) /Keywords () /ModDate (D:20260323070014Z) /PTEX.Fullbanner (This is pdfTeX, Version 3.141592653-2.6-1.40.26\nTeX Live 2024\nkpathsea version 6.4.0) /Producer (pdfTeX-1.40.26) /Subject () /Title () /Trapped /False\nType /XRef /Length 23 /Filter /FlateDecode /DecodeParms\nColumns 5 /Predictor 12\nSize 3 /ID\n26afa53a7fafd12301ca21fab34124dd\nc707199c5fba33e28ab64ff7a6338246\nendstream\nstartxref",
+        "section_order": [
+          "full_document",
+          "o_7_e_152321_n_1_t_152632"
+        ],
+        "sections": {
+          "full_document": "Linearized 1 /L 152916 /H\nO 7 /E 152321 /N 1 /T 152632\nType /XRef /Length 127 /Filter /FlateDecode /DecodeParms\nColumns 5 /Predictor 12\nInfo 1 0 R /Root 5 0 R /Size 114 /Prev 152633                /ID\n26afa53a7fafd12301ca21fab34124dd\nc707199c5fba33e28ab64ff7a6338246\nendstream\nNames 113 0 R /OpenAction 58 0 R /Outlines 109 0 R /PageMode /UseOutlines /Pages 81 0 R /Type /Catalog\nFilter /FlateDecode /S 36 /O 115 /Length 107\nendstream\n59 0 R 60 0 R 61 0 R 62 0 R 63 0 R 64 0 R 65 0 R\nContents 8 0 R /MediaBox\n0 0 612 792\nParent 81 0 R /Resources 66 0 R /Type /Page\nFilter /FlateDecode /Length 4020\nendstream\nFilter /FlateDecode /Length1 766 /Length2 7502 /Length3 0 /Length 8007\nendstream\nFilter /FlateDecode /Length1 748 /Length2 8623 /Length3 0 /Length 9125\nendstream\nFilter /FlateDecode /Length1 2293 /Length2 18356 /Length3 0 /Length 19710\nendstream\nFilter /FlateDecode /Length1 1546 /Length2 8108 /Length3 0 /Length 9123\nendstream\nFilter /FlateDecode /Length1 1833 /Length2 11784 /Length3 0 /Length 12922\ndcswwg5upa\nendstream\nFilter /FlateDecode /Length1 1894 /Length2 12565 /Length3 0 /Length 13741\nIAHb6wj,q@\n3WwSWy/osV\nendstream\nFilter /FlateDecode /Length1 2462 /Length2 21683 /Length3 0 /Length 23104\nendstream\nFilter /FlateDecode /Length1 1668 /Length2 10190 /Length3 0 /Length 11271\nSi.xF7e+JI\nendstream\nFilter /FlateDecode /Length1 1405 /Length2 6188 /Length3 0 /Length 7156\nendstream\nFilter /FlateDecode /Length1 1585 /Length2 10023 /Length3 0 /Length 11065\nendstream\nFilter /FlateDecode /Length1 721 /Length2 958 /Length3 0 /Length 1516\nendstream\nFilter /FlateDecode /Length1 721 /Length2 4672 /Length3 0 /Length 5264\nendstream\nFilter /FlateDecode /Length 742\nendstream\nFilter /FlateDecode /Length 742\nendstream\nFilter /FlateDecode /Length 754\nendstream\nFilter /FlateDecode /Length 711\nendstream\nFilter /FlateDecode /Length 740\nendstream\nFilter /FlateDecode /Length 740\nendstream\nFilter /FlateDecode /Length 900\nendstream\nFilter /FlateDecode /Length 750\nendstream\nFilter /FlateDecode /Length 347\nendstream\nFilter /FlateDecode /Length 372\nendstream\nFilter /FlateDecode /Length 720\nendstream\nFilter /FlateDecode /Length 719\nendstream\nType /ObjStm /Length 3848 /Filter /FlateDecode /N 80 /First 644\nendstream\nAuthor () /CreationDate (D:20260323070014Z) /Creator (LaTeX with hyperref) /Keywords () /ModDate (D:20260323070014Z) /PTEX.Fullbanner (This is pdfTeX, Version 3.141592653-2.6-1.40.26\nTeX Live 2024\nkpathsea version 6.4.0) /Producer (pdfTeX-1.40.26) /Subject () /Title () /Trapped /False\nType /XRef /Length 23 /Filter /FlateDecode /DecodeParms\nColumns 5 /Predictor 12\nSize 3 /ID\n26afa53a7fafd12301ca21fab34124dd\nc707199c5fba33e28ab64ff7a6338246\nendstream\nstartxref",
+          "o_7_e_152321_n_1_t_152632": "Type /XRef /Length 127 /Filter /FlateDecode /DecodeParms\nColumns 5 /Predictor 12\nInfo 1 0 R /Root 5 0 R /Size 114 /Prev 152633                /ID\n26afa53a7fafd12301ca21fab34124dd\nc707199c5fba33e28ab64ff7a6338246\nendstream\nNames 113 0 R /OpenAction 58 0 R /Outlines 109 0 R /PageMode /UseOutlines /Pages 81 0 R /Type /Catalog\nFilter /FlateDecode /S 36 /O 115 /Length 107\nendstream\n59 0 R 60 0 R 61 0 R 62 0 R 63 0 R 64 0 R 65 0 R\nContents 8 0 R /MediaBox\n0 0 612 792\nParent 81 0 R /Resources 66 0 R /Type /Page\nFilter /FlateDecode /Length 4020\nendstream\nFilter /FlateDecode /Length1 766 /Length2 7502 /Length3 0 /Length 8007\nendstream\nFilter /FlateDecode /Length1 748 /Length2 8623 /Length3 0 /Length 9125\nendstream\nFilter /FlateDecode /Length1 2293 /Length2 18356 /Length3 0 /Length 19710\nendstream\nFilter /FlateDecode /Length1 1546 /Length2 8108 /Length3 0 /Length 9123\nendstream\nFilter /FlateDecode /Length1 1833 /Length2 11784 /Length3 0 /Length 12922\ndcswwg5upa\nendstream\nFilter /FlateDecode /Length1 1894 /Length2 12565 /Length3 0 /Length 13741\nIAHb6wj,q@\n3WwSWy/osV\nendstream\nFilter /FlateDecode /Length1 2462 /Length2 21683 /Length3 0 /Length 23104\nendstream\nFilter /FlateDecode /Length1 1668 /Length2 10190 /Length3 0 /Length 11271\nSi.xF7e+JI\nendstream\nFilter /FlateDecode /Length1 1405 /Length2 6188 /Length3 0 /Length 7156\nendstream\nFilter /FlateDecode /Length1 1585 /Length2 10023 /Length3 0 /Length 11065\nendstream\nFilter /FlateDecode /Length1 721 /Length2 958 /Length3 0 /Length 1516\nendstream\nFilter /FlateDecode /Length1 721 /Length2 4672 /Length3 0 /Length 5264\nendstream\nFilter /FlateDecode /Length 742\nendstream\nFilter /FlateDecode /Length 742\nendstream\nFilter /FlateDecode /Length 754\nendstream\nFilter /FlateDecode /Length 711\nendstream\nFilter /FlateDecode /Length 740\nendstream\nFilter /FlateDecode /Length 740\nendstream\nFilter /FlateDecode /Length 900\nendstream\nFilter /FlateDecode /Length 750\nendstream\nFilter /FlateDecode /Length 347\nendstream\nFilter /FlateDecode /Length 372\nendstream\nFilter /FlateDecode /Length 720\nendstream\nFilter /FlateDecode /Length 719\nendstream\nType /ObjStm /Length 3848 /Filter /FlateDecode /N 80 /First 644\nendstream\nAuthor () /CreationDate (D:20260323070014Z) /Creator (LaTeX with hyperref) /Keywords () /ModDate (D:20260323070014Z) /PTEX.Fullbanner (This is pdfTeX, Version 3.141592653-2.6-1.40.26\nTeX Live 2024\nkpathsea version 6.4.0) /Producer (pdfTeX-1.40.26) /Subject () /Title () /Trapped /False\nType /XRef /Length 23 /Filter /FlateDecode /DecodeParms\nColumns 5 /Predictor 12\nSize 3 /ID\n26afa53a7fafd12301ca21fab34124dd\nc707199c5fba33e28ab64ff7a6338246\nendstream\nstartxref"
+        }
+      }
+    }
+  ]
+}
+
+SESSION HISTORY:
+[2026-03-31T17:28:16.371Z] [SYSTEM] Resume context loaded from 3 file(s): AI_Engineer.pdf, AI_Engineer.pdf, AI_Engineer.pdf.
+[2026-03-31T17:28:16.372Z] [SYSTEM] Session initialized with prompt role: You are an elite competitive programming assistant and AI interview solver..
+[2026-03-31T17:42:52.283Z] [AUDIO] [INTERVIEWER] in your work with the
+[YOU] a multi agent a young
+[2026-03-31T17:50:35.474Z] [IMAGE] ~M ew x | @ @mnstage x | @ 29 x | @ sideTask! x | @ Bem x | EB Motorolat x | M Inboy Xx | M Fol x [@ Beri © x | @ simi x | 3 setMati x | ©) cep: X | + 4 Ask Gemini = [&@ | 2
+f = ® mastermind berribot.com/interview/MAN227558331CS000255789 kx ip @ » € 3 BB =e :
+CE  [Dsle [Content [IML [J Goolgle [3 Mvidaml [3° [3 chegg @ testvenfypublih.. i Sack|Olannounce.. | Home (© GrowWithGoogiel. [3 Gm [J AlTook [3 Apply SB Develop generative.. » [3 Al Bookmarks
+F: : hr PTE wr
+9 BerriMasterMind So $
+fe i
+= -—
+-< ; 3
+v wa
+Listening In... %
+Your strategy of implementing a session-wise approach and maintaining state logs with Lambda seems to 1
+have provided a robust solution for scalability, Manideep. Now, let's delve into some specifics from the job A
+description: Could you describe what generators are in Python, and how they differ from normal -
+functions? 5
+Please maintain eye contact.
+I mms es SE side
+2c mm 7 me 2320
+P=, Gy BBQ search CU 9 [=] LEC UT ed
+[2026-03-31T17:50:59.165Z] [ASSISTANT] The problem is to describe what generators are in Python and how they differ from normal functions.
+
+Generators in Python are a type of iterable, like lists or tuples. They do not allow indexing with arbitrary indices but they can still be iterated through with for loops. They generate values on the fly and do not store them in memory, making them more memory-efficient for large datasets. Generators are created using functions and the `yield` keyword.
+
+Normal functions, on the other hand, use the `return` keyword to send a value back to the caller and terminate. Generators use `yield` to produce a sequence of results over time, pausing and resuming their state between each `yield`.
+
+Here's a simple example to illustrate the difference:
+
+```python
+def normal_function():
+    return "Hello, World!"
+
+def generator_function():
+    yield "Hello"
+    yield "World"
+
+# Using normal function
+print(normal_function())  # Output: Hello, World!
+
+# Using generator function
+gen = generator_function()
+print(next(gen))  # Output: Hello
+print(next(gen))  # Output: World
+```
+
+In this example, `normal_function` returns a single value and terminates. `generator_function` yields two values, pausing and resuming its state between each yield.
+
+Complexity:
+- Time complexity: O(1) for each `yield` call.
+- Space complexity: O(1) for each `yield` call, as generators do not store the entire sequence in memory.
+
+Edge cases:
+1. Empty generator: A generator that does not yield any values.
+2. Infinite generator: A generator that yields values indefinitely.
+3. Generator with exceptions: A generator that raises exceptions within its body.
+
+These edge cases are handled naturally by the generator's design, as they can be iterated through until exhaustion or interruption.
+[2026-03-31T17:53:30.538Z] [IMAGE] M ntenient x | @ «| ® ee x | @ sdetask\ x | @ Berigot-/ x | @ Motorola X | M inbo x | M Fo x @bm© x ©: x | 3 setMatic x | €) manideep x 4 Ask Gemini - 8 x
+f = ® mastermind berribot.com/interview/MAN227558331CS000255789 kx ip @ » € 3 BB =e :
+CE CP [Jsde [J Content [IML [J Goole [J Midaml [3° [J chegy @ testverfypublih. 5k Slack|Ol-amounce. Home (© GrowWithGooglel. [3 Cyn [J AlTook [3 Apply 5B Develop generative. » [3 AllBookmarks
+F: : hr PTE wr
+9 BerriMasterMind cs $
+pe
+e J&s
+® -
+-, :
+: d |
+1 v \
+pr
+Berri Speaking...
+Fascinating insights on the nuances of Python's generators and traditional functions, Manideep. Now,
+could you explain the concept of inheritance in Python and share instances when you think it should be i
+used?
+er en
+Please maintain eye contact.
+I mms es SE side
+2c mm 7 Ne 322
+Fo EE Q seen mo moa I
+[2026-03-31T17:54:02.403Z] [ASSISTANT] The problem is to explain the concept of inheritance in Python and provide instances where it should be used.
+
+Inheritance in Python is a mechanism where a new class (subclass) inherits properties and behaviors (methods) from an existing class (superclass). This promotes code reusability and establishes a natural hierarchy between classes. Inheritance is useful when you want to create a new class that is a specialized version of an existing class.
+
+Instances where inheritance should be used:
+1. **Code Reusability**: When multiple classes share common attributes and methods, inheritance allows you to define these in a superclass and reuse them in subclasses.
+2. **Hierarchical Relationships**: When there is a clear hierarchical relationship between classes, such as different types of animals or vehicles.
+3. **Polymorphism**: When you want to use a single interface to represent different underlying forms (data types).
+
+Example:
+```python
+class Animal:
+    def __init__(self, name):
+        self.name = name
+
+    def speak(self):
+        pass
+
+class Dog(Animal):
+    def speak(self):
+        return f"{self.name} says Woof!"
+
+class Cat(Animal):
+    def speak(self):
+        return f"{self.name} says Meow!"
+
+# Usage
+dog = Dog("Buddy")
+cat = Cat("Whiskers")
+print(dog.speak())  # Output: Buddy says Woof!
+print(cat.speak())  # Output: Whiskers says Meow!
+```
+
+Complexity:
+- Time complexity: O(1) for method calls due to direct inheritance.
+- Space complexity: O(1) for method storage in subclasses.
+
+Edge cases:
+1. **Multiple Inheritance**: Handling scenarios where a class inherits from multiple superclasses.
+2. **Method Overriding**: Ensuring that overridden methods in subclasses correctly call the superclass methods if needed.
+3. **Diamond Problem**: Resolving conflicts when a class inherits from two classes that have a common superclass.
+[2026-03-31T17:58:24.298Z] [IMAGE] ~M ew x | @ @mnstage x | @ 29 x | @ sideTask! x | @ Bem x | EB Motorolat x | M Inboy Xx | M Fol x [@ Beri © x | @ simi x | 3 setMati x | ©) cep: X | + 4 Ask Gemini = [&@ | 2
+f = ® mastermind berribot.com/interview/MAN227558331CS000255789 kx ip @ » € 3 BB =e :
+CE  [Dsle [Content [IML [J Goolgle [3 Mvidaml [3° [3 chegg @ testvenfypublih.. i Sack|Olannounce.. | Home (© GrowWithGoogiel. [3 Gm [J AlTook [3 Apply SB Develop generative.. » [3 Al Bookmarks
+F: : hr PTE wr
+9 BerriMasterMind So $
+me
+oO - *
+= -
+il
+= 9
+Berri Speaking... 3 ®
+erri Speaking. » WER
+Thank you for sharing these insights on inheritance in Python, Manideep. The object-oriented \ -
+programming concepts you described are crucial. When you want to make a Python module importable \
+and reusable across various projects, what are the basic steps you would usually take? |
+] $
+Tee
+— a
+S—
+You are too far; please move closer.
+I mms es SE side
+2c mm 7 Ne 2321
+Pr BBQ search CU 9 [=] OBS a dmon 200
+[2026-03-31T17:59:44.486Z] [ASSISTANT] To make a Python module importable and reusable across various projects, follow these basic steps:
+
+1. **Create a Module File**: Write your code in a `.py` file. For example, `mymodule.py`.
+
+2. **Define Functions and Classes**: Organize your code into functions and classes to encapsulate functionality.
+
+3. **Add Docstrings**: Include docstrings to document the purpose and usage of your module, functions, and classes.
+
+4. **Use Absolute Imports**: Ensure that your module uses absolute imports to avoid issues with relative imports in different projects.
+
+5. **Create an `__init__.py` File**: If your module is part of a package, include an `__init__.py` file in the package directory. This file can be empty but signals to Python that the directory should be treated as a package.
+
+6. **Install the Module Locally**: Use `pip install -e .` in the directory containing your module to install it in editable mode. This allows you to import it in other projects.
+
+7. **Use a `setup.py` File**: For more advanced use cases, create a `setup.py` file to define metadata and dependencies. This file is used with tools like `setuptools` to package and distribute your module.
+
+Example `setup.py`:
+```python
+from setuptools import setup, find_packages
+
+setup(
+    name='mymodule',
+    version='0.1',
+    packages=find_packages(),
+    install_requires=[
+        # List your dependencies here
+    ],
+)
+```
+
+8. **Upload to PyPI (Optional)**: If you want to make your module available to others, upload it to the Python Package Index (PyPI) using `twine`.
+
+Example commands:
+```sh
+python setup.py sdist bdist_wheel
+twine upload dist/*
+```
+
+9. **Import and Use**: In other projects, you can now import your module using `import mymodule`.
+
+Example:
+```python
+import mymodule
+result = mymodule.some_function()
+```
+
+By following these steps, you ensure that your Python module is well-organized, documented, and easily reusable across different projects.
+[2026-03-31T18:02:42.052Z] [IMAGE] M inteview! x | @ @instagr: X | 8 @24)kgm x | @ SideTask\ x | @ BemBot-/ x | @ Motorols¢ X | M inbo x | M Fal x (IEEEONRN @ smioricc x | 3 seta x | €) manideep: x | + 4 Ask Gemini - 8 x
+f = ® mastermind berribot.com/interview/MAN227558331CS000255789 kx ip @ » € 3 BB =e :
+CE CP [Jsde [J Content [IML [J Goole [J Midaml [3° [J chegy @ testverfypublih. 5k Slack|Ol-amounce. Home (© GrowWithGooglel. [3 Cyn [J AlTook [3 Apply 5B Develop generative. » [3 AllBookmarks
+5 a Tonnes hd <
+9 BerriMasterMind -
+at
+. 3
+Pr sd
+Berri Speaking...
+Making a Python module importable and reusable across different projects is indeed a complex process, i
+Manideep. Your practice of managing dependencies and maintaining a requirements. txt file are key for A
+effective Python project management. Now moving ahead, could you explain in general terms how
+caching could help to improve the performance in Python applications? 5
+Please maintain eye contact.
+I mms es SE side
+[ET m— - 7 Ne 33
+££ — EE Q seen momoa OO a emo, D2
+[2026-03-31T18:03:13.556Z] [ASSISTANT] Caching can significantly improve the performance of Python applications by storing the results of expensive function calls and reusing them when the same inputs occur again. This reduces redundant computations and speeds up the application, especially when dealing with repetitive tasks or frequently accessed data.
+
+There are several ways to implement caching in Python:
+
+1. **Built-in `functools.lru_cache`**: This decorator is useful for caching the results of pure functions. It stores the results of function calls in a dictionary and reuses them for subsequent calls with the same arguments.
+
+   Example:
+   ```python
+   from functools import lru_cache
+
+   @lru_cache(maxsize=None)
+   def expensive_function(x):
+       # Simulate an expensive computation
+       return x * x
+
+   print(expensive_function(5))  # Computes and caches the result
+   print(expensive_function(5))  # Retrieves the result from cache
+   ```
+
+2. **Third-party Libraries**: Libraries like `joblib` and `cachetools` provide more advanced caching mechanisms. `joblib` is particularly useful for caching large objects and results of functions that involve I/O operations.
+
+   Example with `joblib`:
+   ```python
+   from joblib import Memory
+
+   memory = Memory("cache_dir", verbose=0)
+   @memory.cache
+   def expensive_function(x):
+       # Simulate an expensive computation
+       return x * x
+
+   print(expensive_function(5))  # Computes and caches the result
+   print(expensive_function(5))  # Retrieves the result from cache
+   ```
+
+3. **Database Caching**: For web applications, caching can be implemented using databases like Redis or Memcached. These systems store data in memory, providing fast access times.
+
+   Example with Redis:
+   ```python
+   import redis
+   import pickle
+
+   r = redis.Redis(host='localhost', port=6379, db=0)
+
+   def get_data(key):
+       cached_data = r.get(key)
+       if cached_data:
+           return pickle.loads(cached_data)
+       else:
+           data = expensive_computation()
+           r.set(key, pickle.dumps(data))
+           return data
+
+   def expensive_computation():
+       # Simulate an expensive computation
+       return "expensive result"
+   ```
+
+Complexity:
+- Time complexity: O(1) for cache lookups.
+- Space complexity: Depends on the size of the cache and the data stored.
+
+Edge cases:
+1. **Cache
+[2026-03-31T18:06:19.861Z] [IMAGE] M inteniewt x | @ @instagre x | @ 28k x | @ sideTasky x | @ BemBot-/ x | B MotorolsC x | M inbo x | M Follo x (IEEEONRN @ smioricc x | 3 seta x | €) manideep: x | + 4 Ask Gemini - 8 x
+f = ® mastermind berribot.com/interview/MAN227558331CS000255789 kx ip @ » € 3 BB =e :
+CE CP [Jsde [J Content [IML [J Goole [J Midaml [3° [J chegy @ testverfypublih. 5k Slack|Ol-amounce. Home (© GrowWithGooglel. [3 Cyn [J AlTook [3 Apply 5B Develop generative. » [3 AllBookmarks
+: . fr =
+“® BerriMasterMind T Great job! Halfway there! - 5
+cm
+o Wa
+! =
+Berri Speaking...
+Very well explained, Manideep. Caching most certainly aids in enhancing the performance of Python |
+applications by reducing unnecessary database calls for frequently accessed data. Now, let's start A
+discussing the elements mentioned in the job description, specifically about LangChain and LangGraph.
+Can you explain what LangChain is and what problems it solves in Large Language Model application h
+development?
+You are too far; please move closer.
+I mms es SE side
+2c - 7 me 2335
+Pr BB (Q search CU 9 [=] LEC EU ed
+[2026-03-31T18:07:00.749Z] [ASSISTANT] LangChain is a framework designed to simplify the development of applications that leverage large language models (LLMs). It addresses several key problems in LLM application development, including:
+
+1. **Integration**: LangChain provides a unified interface to integrate various LLMs, making it easier to switch between different models without changing the core application logic.
+2. **Chaining**: It allows developers to chain together multiple language model calls, enabling complex workflows that involve sequential processing of text.
+3. **Memory Management**: LangChain helps manage the state and memory of conversations, ensuring that the model can maintain context across multiple interactions.
+4. **Prompt Engineering**: It offers tools for creating and managing prompts, which are crucial for guiding the behavior of language models.
+5. **Data Augmentation**: LangChain can be used to augment data by generating synthetic examples, which can be useful for training and fine-tuning models.
+
+LangChain is particularly useful for building applications like chatbots, virtual assistants, and any system that requires natural language understanding and generation.
+
+Optimal approach:
+- Use LangChain's modular components to build a scalable and maintainable application.
+- Leverage its chaining capabilities to handle complex workflows.
+- Utilize its memory management features to maintain context in conversations.
+
+Code:
+```python
+from langchain import LLMChain, PromptTemplate
+from langchain.llms import OpenAI
+
+# Define a prompt template
+prompt_template = PromptTemplate(
+    input_variables=["question"],
+    template="You are a helpful assistant. Answer the following question: {question}"
+)
+
+# Initialize the language model
+llm = OpenAI(temperature=0.7)
+
+# Create a chain
+chain = LLMChain(llm=llm, prompt=prompt_template)
+
+# Run the chain with a question
+response = chain.run("What is the capital of France?")
+print(response)
+```
+
+Complexity:
+- Time complexity: Depends on the underlying LLM and the complexity of the prompt.
+- Space complexity: Depends on the memory requirements of the LLM and the data being processed.
+
+Edge cases:
+1. **Empty Input**: Handle cases where the input is empty or invalid.
+2. **Model Unavailability**: Handle scenarios where the LLM is unavailable or returns an error.
+3. **Context Overflow**: Manage situations where the conversation context becomes too large, leading to performance issues.
+[2026-03-31T18:10:36.650Z] [IMAGE] M inteview! x | @ @instagr: X | 8 @24)kgm x | @ SideTask\ x | @ BemBot-/ x | @ Motorols¢ X | M inbo x | M Fol x (IEEEONRN @ smioricc x | 3 seta x | €) manideep: x | + 4 Ask Gemini - 8 x
+f = ® mastermind berribot.com/interview/MAN227558331CS000255789 kx ip @ » € 3 BB =e :
+CE CP [Jsde [J Content [IML [J Goole [J Midaml [3° [J chegy @ testverfypublih. 5k Slack|Ol-amounce. Home (© GrowWithGooglel. [3 Cyn [J AlTook [3 Apply 5B Develop generative. » [3 AllBookmarks
+: . fr =
+9 BerriMasterMind So $
+~ |
+®) "
+Berri Speaking... \ " LN
+Great explanation, Manideep, especially on how LangChain can be used for designing and managing the >
+flow of jobs in ML applications development. Now, in the context of LangGraph, what is the role of a \ —
+a :
+~~
+I mms es SE side
+2c mm 7 me 2340
+Pr BB (Q search CU 9 [=] EC EU ad
+[2026-03-31T18:10:56.528Z] [ASSISTANT] The problem is to explain the role of LangGraph in the context of LangChain.
+
+LangGraph is a component of LangChain that focuses on managing and visualizing the flow of data and control within language model applications. It helps in understanding and debugging complex workflows by providing a graphical representation of the interactions between different components.
+
+Core pattern: Graph traversal and visualization.
+
+Optimal approach:
+- Use LangGraph to create a visual representation of the data flow in your LangChain application.
+- This helps in identifying bottlenecks, understanding the sequence of operations, and debugging issues more effectively.
+- LangGraph can be particularly useful in complex applications where multiple language models and data sources are involved.
+
+Code:
+```python
+from langchain import LangGraph
+
+# Initialize LangGraph
+graph = LangGraph()
+
+# Add nodes and edges to the graph
+graph.add_node("start", "Start Node")
+graph.add_node("llm_call", "LLM Call")
+graph.add_node("data_processing", "Data Processing")
+graph.add_node("end", "End Node")
+
+graph.add_edge("start", "llm_call")
+graph.add_edge("llm_call", "data_processing")
+graph.add_edge("data_processing", "end")
+
+# Visualize the graph
+graph.visualize()
+```
+
+Complexity:
+- Time complexity: O(N) for adding nodes and edges, where N is the number of nodes and edges.
+- Space complexity: O(N) for storing the graph structure.
+
+Edge cases:
+1. **Empty Graph**: Handle cases where the graph has no nodes or edges.
+2. **Cyclic Dependencies**: Detect and handle cyclic dependencies in the graph.
+3. **Large Graphs**: Optimize for performance when dealing with very large graphs.
+[2026-03-31T18:13:03.222Z] [IMAGE] M inteniewt x | @ @instage x | @ 28k x | @ sideTasky x | @ BemiBot-/ x | B MotorolsC x | M inbo x | M Fal x (IEEEONRN @ smioricc x | 3 seta x | €) manideep: x | + 4 Ask Gemini - 8 x
+f = ® mastermind berribot.com/interview/MAN227558331CS000255789 kx ip @ » € 3 BB =e :
+mz CP [Jsde [J Content [J ML [J Google [J Mvidaml [3% [J chegg @ testverfypublih. <& Slack|Ol-amounce.. Home © GrowWithGooglel. [3 Gn [J AlTooks [3 Apply EE Develop generative. » [3 Al Bookmarks
+: . fr =
+9 BerriMasterMind So $
+\ hy §
+Berri Speaking... \ "
+Absolutely, Manideep. The checkpointer plays a pivotal role in managing session history in LangGraph, ¥
+which is crucial in sustained conversations. Moving forward, could you explain how nodes and edges are - —
+used in a LangGraph application? pS
+S—
+> |
+I mms es SE side
+2c - by me 342
+Pr BB (Q search CU 9 [=] EC EU acs
+[2026-03-31T18:13:30.491Z] [ASSISTANT] The problem is to explain how nodes and edges are used in a LangGraph application.
+
+Nodes and edges in LangGraph represent the components and their interactions within a language model application. Nodes typically represent different stages or operations, such as data processing, model calls, or external API interactions. Edges define the flow of data between these nodes, illustrating the sequence of operations.
+
+Core pattern: Graph traversal and visualization.
+
+Optimal approach:
+- Use nodes to represent different stages or operations in the workflow.
+- Use edges to define the data flow between these stages.
+- This approach helps in visualizing and debugging complex workflows, making it easier to understand the sequence of operations and identify bottlenecks.
+
+Code:
+```python
+from langchain import LangGraph
+
+# Initialize LangGraph
+graph = LangGraph()
+
+# Add nodes to the graph
+graph.add_node("start", "Start Node")
+graph.add_node("llm_call", "LLM Call")
+graph.add_node("data_processing", "Data Processing")
+graph.add_node("end", "End Node")
+
+# Add edges to the graph
+graph.add_edge("start", "llm_call")
+graph.add_edge("llm_call", "data_processing")
+graph.add_edge("data_processing", "end")
+
+# Visualize the graph
+graph.visualize()
+```
+
+Complexity:
+- Time complexity: O(N) for adding nodes and edges, where N is the number of nodes and edges.
+- Space complexity: O(N) for storing the graph structure.
+
+Edge cases:
+1. **Empty Graph**: Handle cases where the graph has no nodes or edges.
+2. **Cyclic Dependencies**: Detect and handle cyclic dependencies in the graph.
+3. **Large Graphs**: Optimize for performance when dealing with very large graphs.
+[2026-03-31T18:15:14.946Z] [IMAGE] M inteview! x | @ @instagr: X | 8 @24)Kkgn x | @ SideTask\ x | @ BemiBot-/ x | @ Motorols¢ X | M inbo x | M Fol x [EOI @ smicric x | 3 setMaric x | €) manideep: x | + 4 Ask Gemini = | &@ |
+f = ® mastermind berribot.com/interview/MAN227558331CS000255789 kx ip @ » € 3 BB =e :
+CE  [Dsle [Content [IML [J Goolgle [3 Mvidaml [3° [3 chegg @ testvenfypublih.. i Sack|Olannounce.. | Home (© GrowWithGoogiel. [3 Gm [J AlTook [3 Apply SB Develop generative.. » [3 Al Bookmarks
+5 a Tonnes hd <
+9 BerriMasterMind So
+¥ - ®
+\ Eg
+Berri Speaking... |.
+That was quite comprehensive, Manideep. Understanding the functional elements like nodes and edges in ° _
+LangGraph, indeed plays a significant role in machine learning workflows. In LangChain, how is the . p—
+‘metadata associated with documents handled?
+pg
+I mms es SE side
+2c mm 7 me 2348
+Pr BB (Q search CU 9 [=] EC FU od
+[2026-03-31T18:15:50.805Z] [ASSISTANT] The problem is to explain how metadata associated with documents is handled in LangChain.
+
+In LangChain, metadata associated with documents is managed to provide context and additional information about the documents being processed. This metadata can include details such as the source of the document, timestamps, author information, and other relevant attributes. Handling metadata effectively is crucial for tasks like document retrieval, filtering, and enhancing the accuracy of language model responses.
+
+Core pattern: Metadata management and retrieval.
+
+Optimal approach:
+- Use structured data formats (e.g., JSON) to store metadata.
+- Implement efficient indexing and querying mechanisms to retrieve metadata quickly.
+- Ensure metadata is consistently updated and synchronized with the document content.
+
+Code:
+```python
+from langchain.docstore.document import Document
+from langchain.docstore.in_memory import InMemoryDocstore
+
+# Create a document with metadata
+doc = Document(
+    page_content="This is a sample document.",
+    metadata={"source": "example.com", "author": "John Doe", "timestamp": "2023-10-01T12:00:00Z"}
+)
+
+# Initialize an in-memory document store
+docstore = InMemoryDocstore()
+
+# Add the document to the store
+docstore.add(doc)
+
+# Retrieve the document by metadata
+retrieved_docs = docstore.search("author:John Doe")
+for doc in retrieved_docs:
+    print(doc.page_content, doc.metadata)
+```
+
+Complexity:
+- Time complexity: O(log N) for indexing and O(1) for retrieval, where N is the number of documents.
+- Space complexity: O(N) for storing the documents and their metadata.
+
+Edge cases:
+1. **Missing Metadata**: Handle cases where some documents may not have complete metadata.
+2. **Duplicate Metadata**: Ensure that duplicate metadata entries are managed correctly to avoid conflicts.
+3. **Large Metadata**: Optimize for performance when dealing with large amounts of metadata.
+[2026-03-31T18:17:25.035Z] [IMAGE] ~M ew! x | @ age x | E24 x | @ sideTask! x | @ Bem x | EB Motorolat x | M Inboy Xx | M Fol x [@ Beri © x | @ simi x | 3 setMati x | ©) cep: X | + 4 Ask Gemini = [&@ | 2
+f = ® mastermind berribot.com/interview/MAN227558331CS000255789 kx ip @ » € 3 BB =e :
+CE  [Dsle [Content [IML [J Goolgle [3 Mvidaml [3° [3 chegg @ testvenfypublih.. i Sack|Olannounce.. | Home (© GrowWithGoogiel. [3 Gm [J AlTook [3 Apply SB Develop generative.. » [3 Al Bookmarks
+F: : hr PTE wr
+9 BerriMasterMind So $
+pe
+ae
+. |
+Berri Speaking...
+The use of metadata is certainly a crucial part of working with LangChain, especially considering the need |
+for managing and referencing documents, Manideep. Now, let's pivot our attention towards Google ADK. A
+What measures would you execute to ensure the least-privilege Identity Access Management for an ADK
+agent that reads Drive files? 5
+Please maintain eye contact.
+I mms es SE side
+2c mm 7 Ne 2348
+Pr BBQ search CU 9 [=] EEC EU ad
+[2026-03-31T18:18:03.048Z] [ASSISTANT] To ensure the least-privilege Identity Access Management (IAM) for an ADK agent that reads Drive files, follow these measures:
+
+1. **Principle of Least Privilege**: Grant the ADK agent only the permissions necessary to perform its tasks. Avoid giving broad access like "Full Access to Drive."
+
+2. **Scoped Access**: Use Google Drive API scopes to limit the agent's access. For example, use `https://www.googleapis.com/auth/drive.readonly` to allow read-only access to files.
+
+3. **Service Accounts**: Use a service account specifically for the ADK agent. This account should have the minimum required permissions and should not be shared with other applications or users.
+
+4. **IAM Roles and Permissions**: Assign the service account a custom role with the least privileges needed. For example, create a role that only allows reading specific files or folders.
+
+5. **Audit Logs**: Enable audit logging to monitor the ADK agent's activities. Regularly review these logs to ensure the agent is not accessing unauthorized data.
+
+6. **Access Controls**: Implement access controls at the file and folder level. Ensure that the ADK agent can only access the necessary files and folders.
+
+7. **Regular Reviews**: Periodically review and update the permissions and roles assigned to the ADK agent. Remove any unnecessary permissions to maintain the least-privilege principle.
+
+Example of setting up a service account with limited permissions:
+```python
+from google.oauth2 import service_account
+from googleapiclient.discovery import build
+
+# Define the scope
+SCOPES = ['https://www.googleapis.com/auth/drive.readonly']
+
+# Load the service account credentials
+credentials = service_account.Credentials.from_service_account_file(
+    'path/to/service_account.json', scopes=SCOPES)
+
+# Build the Drive API client
+service = build('drive', 'v3', credentials=credentials)
+
+# Example: List files in the Drive
+results = service.files().list(pageSize=10, fields="nextPageToken, files(id, name)").execute()
+items = results.get('files', [])
+
+if not items:
+    print('No files found.')
+else:
+    print('Files:')
+    for item in items:
+        print(f'{item["name"]} ({item["id"]})')
+```
+
+Complexity:
+- Time complexity: O(1) for setting up permissions and O(N) for listing files, where N is the number of files.
+- Space complexity:
+[2026-03-31T18:18:59.335Z] [IMAGE] Follow-up debugging context from screenshots:
+~M ew! x | @ age x | E24 x | @ sideTask! x | @ Bem x | EB Motorolat x | M Inboy Xx | M Fol x [@ Beri © x | @ simi x | 3 setMati x | ©) cep: X | + 4 Ask Gemini = [&@ | 2
+f = ® mastermind berribot.com/interview/MAN227558331CS000255789 kx ip @ » € 3 BB =e :
+CE  [Dsle [Content [IML [J Goolgle [3 Mvidaml [3° [3 chegg @ testvenfypublih.. i Sack|Olannounce.. | Home (© GrowWithGoogiel. [3 Gm [J AlTook [3 Apply SB Develop generative.. » [3 Al Bookmarks
+
+4 : pics © |g
+
+9 BerriMasterMind So
+
+—
+
+° Jas
+
+-
+
+nd
+
+Berri Speaking...
+That's a thorough answer, Manideep. You've correctly highlighted the importance of adhering to the J
+principle of least privilege when setting up Google ADK agents to ensure adequate data protection. Can \
+you now shed some light on how ADK can be integrated with a vector database at a high level?
+Please maintain eye contact.
+I mms es SE side
+
+2c mm 7 Ne 2348
+Pr BBQ search CU 9 [=] EEC EU ad
+
+Original problem context:
+{
+  "problem_statement": "~M ew! x | @ age x | E24 x | @ sideTask! x | @ Bem x | EB Motorolat x | M Inboy Xx | M Fol x [@ Beri © x | @ simi x | 3 setMati x | ©) cep: X | + 4 Ask Gemini = [&@ | 2\nf = ® mastermind berribot.com/interview/MAN227558331CS000255789 kx ip @ » € 3 BB =e :\nCE  [Dsle [Content [IML [J Goolgle [3 Mvidaml [3° [3 chegg @ testvenfypublih.. i Sack|Olannounce.. | Home (© GrowWithGoogiel. [3 Gm [J AlTook [3 Apply SB Develop generative.. » [3 Al Bookmarks\nF: : hr PTE wr\n9 BerriMasterMind So $\npe\nae\n. |\nBerri Speaking...\nThe use of metadata is certainly a crucial part of working with LangChain, especially considering the need |\nfor managing and referencing documents, Manideep. Now, let's pivot our attention towards Google ADK. A\nWhat measures would you execute to ensure the least-privilege Identity Access Management for an ADK\nagent that reads Drive files? 5\nPlease maintain eye contact.\nI mms es SE side\n2c mm 7 Ne 2348\nPr BBQ search CU 9 [=] EEC EU ad",
+  "input_format": {
+    "description": "OCR extracted from screenshot input",
+    "parameters": []
+  },
+  "output_format": {
+    "description": "Interview response generated from screenshot",
+    "type": "string",
+    "subtype": "text"
+  },
+  "complexity": {
+    "time": "N/A",
+    "space": "N/A"
+  },
+  "test_cases": [],
+  "validation_type": "manual",
+  "difficulty": "custom",
+  "latest_response": "To ensure the least-privilege Identity Access Management (IAM) for an ADK agent that reads Drive files, follow these measures:\n\n1. **Principle of Least Privilege**: Grant the ADK agent only the permissions necessary to perform its tasks. Avoid giving broad access like \"Full Access to Drive.\"\n\n2. **Scoped Access**: Use Google Drive API scopes to limit the agent's access. For example, use `https://www.googleapis.com/auth/drive.readonly` to allow read-only access to files.\n\n3. **Service Accounts**: Use a service account specifically for the ADK agent. This account should have the minimum required permissions and should not be shared with other applications or users.\n\n4. **IAM Roles and Permissions**: Assign the service account a custom role with the least privileges needed. For example, create a role that only allows reading specific files or folders.\n\n5. **Audit Logs**: Enable audit logging to monitor the ADK agent's activities. Regularly review these logs to ensure the agent is not accessing unauthorized data.\n\n6. **Access Controls**: Implement access controls at the file and folder level. Ensure that the ADK agent can only access the necessary files and folders.\n\n7. **Regular Reviews**: Periodically review and update the permissions and roles assigned to the ADK agent. Remove any unnecessary permissions to maintain the least-privilege principle.\n\nExample of setting up a service account with limited permissions:\n```python\nfrom google.oauth2 import service_account\nfrom googleapiclient.discovery import build\n\n# Define the scope\nSCOPES = ['https://www.googleapis.com/
+[2026-03-31T18:19:36.331Z] [ASSISTANT] The problem is to explain how ADK can be integrated with a vector database at a high level.
+
+ADK (Application Data Kit) can be integrated with a vector database to enhance data retrieval and processing capabilities. A vector database stores data as high-dimensional vectors, which are useful for tasks like similarity search, recommendation systems, and machine learning. Integrating ADK with a vector database allows for efficient storage, retrieval, and manipulation of vector data.
+
+Core pattern: Vector database integration.
+
+Optimal approach:
+- Use ADK to preprocess and transform data into vector format.
+- Store these vectors in a vector database for fast retrieval.
+- Utilize the vector database's querying capabilities to perform similarity searches and other vector operations.
+- Ensure that the integration is scalable and can handle large volumes of data.
+
+Code:
+```python
+from google.cloud import aiplatform
+from some_vector_database import VectorDatabase
+
+# Initialize ADK client
+aiplatform.init(project='your-project-id', location='your-location')
+
+# Preprocess data using ADK
+def preprocess_data(data):
+    # Example preprocessing steps
+    processed_data = data.lower().strip()
+    return processed_data
+
+# Transform data into vector format
+def transform_to_vector(data):
+    # Example transformation to vector
+    vector = [ord(char) for char in data]
+    return vector
+
+# Store vectors in a vector database
+def store_vectors(vectors):
+    db = VectorDatabase()
+    for vector in vectors:
+        db.insert(vector)
+
+# Retrieve vectors from the vector database
+def retrieve_vectors(query_vector):
+    db = VectorDatabase()
+    results = db.search(query_vector)
+    return results
+
+# Example usage
+data = "example data"
+processed_data = preprocess_data(data)
+vector = transform_to_vector(processed_data)
+store_vectors([vector])
+
+query_vector = transform_to_vector("query data")
+results = retrieve_vectors(query_vector)
+print(results)
+```
+
+Complexity:
+- Time complexity: O(N) for preprocessing and transforming data, where N is the size of the data. O(log M) for vector database operations, where M is the number of vectors.
+- Space complexity: O(N) for storing vectors in the database.
+
+Edge cases:
+1. **Empty Data**: Handle cases where the input data is empty or invalid.
+2. **Large Data**: Optimize for performance when dealing with large volumes of data.
+3. **Vector Dimension Mismatch**: Ensure that vectors have consistent dimensions to avoid errors during storage and retrieval.
+[2026-03-31T18:22:45.636Z] [IMAGE] M ntenient x | @ «| ® ee x | @ sdetask\ x | @ Berigot-/ x | @ Motorola X | M inbo x | M Fo x @bm© x ©: x | 3 SetMatix x | €) manideep: X 4 Ask Gemini - 8 x
+f = ® mastermind berribot.com/interview/MAN227558331CS000255789 kx ip @ » € 3 BB =e :
+CE CP [Jsde [J Content [IML [J Goole [J Midaml [3° [J chegy @ testverfypublih. 5k Slack|Ol-amounce. Home (© GrowWithGooglel. [3 Cyn [J AlTook [3 Apply 5B Develop generative. » [3 AllBookmarks
+F: : hr PTE wr
+9 BerriMasterMind aloo, $
+o a
+( = ) :
+Berri Speaking...
+Interesting, Manideep. Your approach leverages the flexibility of Google ADK and its compatibility with
+other platforms and databases, primarily vector databases in this case. Now, let's move to FastAPI. How A
+would you set custom HTTP status codes for responses in FastAPI?
+me my
+——
+Please maintain eye contact.
+I mms es SE side
+2c mm 7 Ne 352
+EET EE Q seen mo moa I
+[2026-03-31T18:23:09.589Z] [ASSISTANT] The problem is to set custom HTTP status codes for responses in FastAPI.
+
+Core pattern: HTTP response handling.
+
+Optimal approach:
+- Use FastAPI's `status` module to set custom HTTP status codes.
+- This approach is optimal because it leverages FastAPI's built-in capabilities for handling HTTP responses, ensuring that the solution is both efficient and maintainable.
+- Alternatively, you could manually set the status code using the `Response` class, but using the `status` module is more concise and readable.
+
+Code:
+```python
+from fastapi import FastAPI, status
+from fastapi.responses import JSONResponse
+
+app = FastAPI()
+
+@app.get("/items/{item_id}")
+async def read_item(item_id: int):
+    if item_id == 1:
+        return JSONResponse(status_code=status.HTTP_200_OK, content={"item_id": item_id, "name": "Item 1"})
+    elif item_id == 2:
+        return JSONResponse(status_code=status.HTTP_404_NOT_FOUND, content={"detail": "Item not found"})
+    else:
+        return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST, content={"detail": "Invalid item ID"})
+
+# Example usage:
+# - GET /items/1 -> 200 OK with item details
+# - GET /items/2 -> 404 Not Found
+# - GET /items/3 -> 400 Bad Request
+```
+
+Complexity:
+- Time complexity: O(1) for setting the status code and returning the response.
+- Space complexity: O(1) for storing the response data.
+
+Edge cases:
+1. **Invalid Item ID**: Handle cases where the item ID is not recognized.
+2. **Empty Response**: Ensure that the response content is not empty.
+3. **Non-Integer Item ID**: Handle cases where the item ID is not an integer.
+[2026-03-31T18:26:04.645Z] [IMAGE] ~M ew! x | @ age x | E24 x | @ sideTask! x | @ Bem x | EB Motorolat x | M Inboy Xx | M Fol x [@ Beri © x | @ simi x | 3 setMati x | ©) cep: X | + 4 Ask Gemini = [&@ | 2
+f = ® mastermind berribot.com/interview/MAN227558331CS000255789 kx ip @ » € 3 BB =e :
+CE  [Dsle [Content [IML [J Goolgle [3 Mvidaml [3° [3 chegg @ testvenfypublih.. i Sack|Olannounce.. | Home (© GrowWithGoogiel. [3 Gm [J AlTook [3 Apply SB Develop generative.. » [3 Al Bookmarks
+F: : hr PTE wr
+9 BerriMasterMind So $
+pe
+oO Re |
+== -
+-. |
+Berri Speaking...
+Thank you for explaining how to set custom HTTP status codes in FastAPI, Manideep. Having complete |
+control over status codes can indeed streamline the debugging process. Now moving on, how would you \
+20 about capturing correlation IDs for request tracing in FastAPI?
+Please maintain eye contact.
+I mms es SE side
+2c mm 7 Ne 2355
+EET EE Q seen mo moa IE
+[2026-03-31T18:26:40.364Z] [ASSISTANT] The problem is to capture correlation IDs for request tracing in FastAPI.
+
+Correlation IDs are essential for tracing requests across distributed systems, enabling better debugging and monitoring. In FastAPI, you can capture and propagate correlation IDs using middleware.
+
+Core pattern: Middleware for request processing.
+
+Optimal approach:
+- Use FastAPI middleware to extract and propagate correlation IDs.
+- This approach is optimal because it centralizes the logic for handling correlation IDs, making it easy to maintain and extend.
+- Middleware runs for every request, ensuring that correlation IDs are consistently captured and propagated.
+
+Code:
+```python
+from fastapi import FastAPI, Request
+from starlette.middleware.base import BaseHTTPMiddleware
+import uuid
+
+app = FastAPI()
+
+class CorrelationIdMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        correlation_id = request.headers.get("X-Correlation-ID") or str(uuid.uuid4())
+        response = await call_next(request)
+        response.headers["X-Correlation-ID"] = correlation_id
+        return response
+
+app.add_middleware(CorrelationIdMiddleware)
+
+@app.get("/items/{item_id}")
+async def read_item(item_id: int, request: Request):
+    correlation_id = request.headers.get("X-Correlation-ID")
+    return {"item_id": item_id, "correlation_id": correlation_id}
+
+# Example usage:
+# - GET /items/1 with X-Correlation-ID header -> 200 OK with correlation ID in response
+# - GET /items/1 without X-Correlation-ID header -> 200 OK with new correlation ID in response
+```
+
+Complexity:
+- Time complexity: O(1) for extracting and setting the correlation ID.
+- Space complexity: O(1) for storing the correlation ID.
+
+Edge cases:
+1. **Missing Correlation ID**: Handle cases where the correlation ID is not present in the request headers.
+2. **Duplicate Correlation ID**: Ensure that the correlation ID is unique for each request.
+3. **Large Request Volume**: Optimize for performance when handling a large number of requests.
+[2026-03-31T18:29:35.497Z] [IMAGE] ~M ew! x | @ age x | E24 x | @ sideTask! x | @ Bem x | EB Motorolat x | M Inboy Xx | M Fol x [@ Beri © x | @ simi x | 3 setMati x | ©) cep: X | + 4 Ask Gemini = [&@ | 2
+f = ® mastermind berribot.com/interview/MAN227558331CS000255789 kx ip @ » € 3 BB =e :
+CE  [Dsle [Content [IML [J Goolgle [3 Mvidaml [3° [3 chegg @ testvenfypublih.. i Sack|Olannounce.. | Home (© GrowWithGoogiel. [3 Gm [J AlTook [3 Apply SB Develop generative.. » [3 Al Bookmarks
+4 : pics © |g
+9 BerriMasterMind So
+4 v \ 3
+A”
+Berri Speaking... " KX
+Excellent coverage on the usage of middleware for capturing and propagating correlation IDs for more - 3 ..
+structured request tracing in FastAPI, Manideep. Let's switch gears to another concept. What is the \ ——
+purpose of canonicalizing URLS and file paths during ingestion, particularly in the context of Retrieval -
+Augmented Generation (RAG)? ay °
+1m
+I mms es SE side
+2c mm 7 Ne 2350
+Pr BBQ search CU 9 [=] EEC EU od
+[2026-03-31T18:30:00.291Z] [ASSISTANT] Canonicalizing URLs and file paths during ingestion is crucial for ensuring consistency and accuracy in Retrieval-Augmented Generation (RAG) systems. Canonicalization involves converting URLs and file paths to a standard format, which helps in several ways:
+
+1. **Consistency**: Ensures that different representations of the same URL or file path are treated as identical. For example, `http://example.com` and `http://www.example.com` should be considered the same.
+
+2. **Avoiding Duplicates**: Prevents duplicate entries in the database, which can lead to inefficient storage and retrieval.
+
+3. **Improved Retrieval**: Enhances the accuracy of retrieval operations by ensuring that the system can correctly identify and retrieve the intended resource.
+
+4. **Security**: Helps in mitigating certain types of attacks, such as URL redirection exploits, by standardizing the format of URLs.
+
+In the context of RAG, canonicalization ensures that the system can reliably retrieve and augment information from the correct sources, leading to more accurate and relevant responses.
+
+Example of canonicalizing a URL:
+```python
+from urllib.parse import urlparse, urlunparse
+
+def canonicalize_url(url):
+    parsed_url = urlparse(url)
+    canonical_url = urlunparse((parsed_url.scheme, parsed_url.netloc.lower(), parsed_url.path, parsed_url.params, parsed_url.query, parsed_url.fragment))
+    return canonical_url
+
+# Example usage
+url = "http://Example.com/path?query=1"
+canonical_url = canonicalize_url(url)
+print(canonical_url)  # Output: http://example.com/path?query=1
+```
+
+Complexity:
+- Time complexity: O(1) for parsing and reconstructing the URL.
+- Space complexity: O(1) for storing the canonical URL.
+
+Edge cases:
+1. **Invalid URLs**: Handle cases where the input URL is malformed or invalid.
+2. **Special Characters**: Ensure that special characters in the URL are correctly handled and preserved.
+3. **Protocol Variations**: Handle different protocols (e.g., `http` vs. `https`) appropriately.
+[2026-03-31T18:34:57.978Z] [IMAGE] M ntenient x | @ «| ® ee x | @ sdetask\ x | @ Berigot-/ x | @ Motorola X | M inbo x | M Fo x @bm© x ©: x | 3 SetMatix x | €) manideep: X 4 Ask Gemini - 8 x
+f = ® mastermind berribot.com/interview/MAN227558331CS000255789 kx ip @ » € 3 BB =e :
+CE CP [Jsde [J Content [IML [J Goole [J Midaml [3° [J chegy @ testverfypublih. 5k Slack|Ol-amounce. Home (© GrowWithGooglel. [3 Cyn [J AlTook [3 Apply 5B Develop generative. » [3 AllBookmarks
+F: : hr PTE wr
+9 BerriMasterMind cs $
+°) Ne
+2 -_
+-, : |
+Berri Speaking...
+I see, Manideep. Canonicalizing URLs and file paths helps in organizing the data in a structured manner,
+useful in document retrieval systems like RAG. Now, could you explain how you would manage situations \
+where there are conflicting outputs from two agents in a multi-agent architecture?
+Ee]
+————
+Please maintain eye contact.
+I mms es SE side
+2c mm 7 Ne 000s
+I= mm Q Search mom 9 a OW TW E00
+[2026-03-31T18:35:35.267Z] [ASSISTANT] The problem is to manage situations where there are conflicting outputs from two agents in a multi-agent architecture.
+
+In a multi-agent system, conflicts can arise when different agents produce conflicting outputs. Managing these conflicts effectively is crucial for maintaining the integrity and reliability of the system. The core pattern here involves conflict resolution and consensus algorithms.
+
+Optimal approach:
+- Implement a conflict resolution mechanism that prioritizes outputs based on predefined rules or criteria.
+- Use consensus algorithms to ensure that the final output is agreed upon by a majority of agents.
+- Maintain a logging and monitoring system to track conflicts and their resolutions for future analysis and improvement.
+
+Code:
+```python
+class Agent:
+    def __init__(self, id):
+        self.id = id
+
+    def produce_output(self):
+        # Simulate output production
+        return f"Output from Agent {self.id}"
+
+def resolve_conflict(outputs):
+    # Simple conflict resolution: prioritize the first output
+    return outputs[0]
+
+def consensus(outputs):
+    # Simple consensus: majority vote
+    from collections import Counter
+    count = Counter(outputs)
+    most_common = count.most_common(1)
+    return most_common[0][0]
+
+# Example usage
+agents = [Agent(1), Agent(2), Agent(3)]
+outputs = [agent.produce_output() for agent in agents]
+
+# Resolve conflict
+resolved_output = resolve_conflict(outputs)
+print(f"Resolved Output: {resolved_output}")
+
+# Consensus
+consensus_output = consensus(outputs)
+print(f"Consensus Output: {consensus_output}")
+```
+
+Complexity:
+- Time complexity: O(N) for conflict resolution and consensus, where N is the number of agents.
+- Space complexity: O(N) for storing the outputs.
+
+Edge cases:
+1. **Tie in Consensus**: Handle cases where there is a tie in the consensus algorithm.
+2. **Empty Outputs**: Handle cases where some agents produce empty outputs.
+3. **Multiple Conflicts**: Handle scenarios where multiple conflicts occur simultaneously.
+
+CURRENT INPUT:
+SOURCE: image
+CONTENT: ™M ew! x | @ ag: X | 6B (224 x | @ side Ta x | @ Berit x | E Motorola Xx | M Inbo x | ™M Fol x [Beri © xX  @ simi x 3 SetMat x | ©) cep X | + 4 Ask Gemini —- a x
+f = ® mastermind berribot.com/interview/MAN227558331CS000255789 kx ip @ » € 3 BB =e :
+CE CP [Jsde [J Content [IML [J Goole [J Midaml [3° [J chegy @ testverfypublih. 5k Slack|Ol-amounce. Home (© GrowWithGooglel. [3 Cyn [J AlTook [3 Apply 5B Develop generative. » [3 AllBookmarks
+F: : hr PTE wr
+9 BerriMasterMind So $
+~ Ree
+= .
+= |
+Berri Speaking...
+That's an excellent strategy, Manideep. Having a mechanism of scoring based on groundedness and J
+faithfulness could indeed help in deciding which agent's output is more relevant to a given user's query. \
+Lastly, in the context of multi-agent architecture, how do you handle the secure storage and utilization of
+API keys in agent workflows? 5
+Please maintain eye contact.
+I mms es SE side
+Thunderstorm w.. mm 7 me 0006
+££ — EE Q sen momoa EY Td
+
+STEP 1: PROBLEM RECONSTRUCTION (CRITICAL)
+- Extract ONLY the relevant problem statement from noisy input.
+- Ignore UI elements, buttons, logs, and unrelated text.
+- Reconstruct problem description, input format, output format, and constraints (infer reasonably if missing).
+
+STEP 2: UNDERSTANDING
+- Restate the problem clearly in 1-2 lines.
+- Identify the core pattern (matrix, graph, DP, greedy, hashing, two pointers, etc.).
+
+STEP 3: OPTIMAL APPROACH
+- Choose the MOST optimal solution (not brute force).
+- Justify why it is optimal.
+- Mention alternatives briefly only if relevant.
+
+STEP 4: CODE (PRODUCTION QUALITY)
+- Write clean, efficient, interview-level code.
+- Use proper naming and avoid unnecessary variables.
+- Prefer optimal space usage (O(1) where realistically possible).
+
+STEP 5: COMPLEXITY
+- Time complexity in Big-O.
+- Space complexity in Big-O.
+
+STEP 6: EDGE CASES
+- Mention at least 3 edge cases.
+- Ensure the solution handles them.
+
+STEP 7: SELF-CHECK (IMPORTANT)
+- Verify expected-output alignment.
+- Confirm no missed critical edge cases.
+- Confirm no further practical optimization is missed.
+
+STRICT RULES:
+- NEVER return brute force if an optimal approach exists.
+- ALWAYS aim for interview-level optimal solution quality.
+- Prefer known optimal patterns for standard problems.
+- If problem is standard (e.g., LeetCode), use best-known approach.
+- Do NOT include irrelevant explanation or meta text.
+
+SPECIAL HANDLING FOR OCR INPUT:
+- Treat input as noisy and potentially incomplete.
+- Prioritize semantic understanding over literal OCR wording.
+- Reconstruct missing parts intelligently when necessary.
+
+OUTPUT FORMAT (STRICT):
+- Quick understanding
+- Optimal approach
+- Code
+- Complexity
+- Edge cases
+================= LLM FILLED PROMPT END =================

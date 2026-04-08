@@ -1,8 +1,17 @@
 import { globalShortcut, app } from "electron"
 import { AppState } from "./main" // Adjust the import path if necessary
 
+export const HOTKEYS = {
+  toggleWindow: "CommandOrControl+Shift+Space",
+  screenshot: "CommandOrControl+Alt+Shift+H",
+  solve: "CommandOrControl+Alt+Shift+Enter",
+  openChat: "CommandOrControl+Alt+Shift+C",
+  sttToggle: "CommandOrControl+Alt+Shift+S"
+} as const
+
 export class ShortcutsHelper {
   private appState: AppState
+  private lastSttToggleAt: number = 0
 
   constructor(appState: AppState) {
     this.appState = appState
@@ -10,12 +19,12 @@ export class ShortcutsHelper {
 
   public registerGlobalShortcuts(): void {
     // Add global shortcut to show/center window
-    globalShortcut.register("CommandOrControl+Shift+Space", () => {
+    globalShortcut.register(HOTKEYS.toggleWindow, () => {
       console.log("Show/Center window shortcut pressed...")
       this.appState.centerAndShowWindow()
     })
 
-    globalShortcut.register("CommandOrControl+H", async () => {
+    globalShortcut.register(HOTKEYS.screenshot, async () => {
       const mainWindow = this.appState.getMainWindow()
       if (mainWindow) {
         console.log("Taking screenshot...")
@@ -32,8 +41,35 @@ export class ShortcutsHelper {
       }
     })
 
-    globalShortcut.register("CommandOrControl+Enter", async () => {
+    globalShortcut.register(HOTKEYS.solve, async () => {
       await this.appState.processingHelper.processScreenshots()
+    })
+
+    globalShortcut.register(HOTKEYS.openChat, () => {
+      const mainWindow = this.appState.getMainWindow()
+      if (mainWindow && !mainWindow.isDestroyed()) {
+        // Keep stealth mode: do not focus or show the window on chat hotkey.
+        mainWindow.webContents.send("open-chat")
+      }
+    })
+
+    globalShortcut.register(HOTKEYS.sttToggle, async () => {
+      const now = Date.now()
+      if (now - this.lastSttToggleAt < 1200) {
+        return
+      }
+      this.lastSttToggleAt = now
+
+      try {
+        const result = await this.appState.processingHelper.toggleRealtimeAudioTranscription()
+        const isDebounced = Boolean((result as any)?.debounced)
+        const hasMeaningfulPayload = Boolean((result as any)?.transcript) || Boolean((result as any)?.llmReply)
+        if (!isDebounced && (result?.active || hasMeaningfulPayload)) {
+          console.log("Realtime audio transcription toggled:", result)
+        }
+      } catch (error) {
+        console.error("Failed to toggle realtime audio transcription:", error)
+      }
     })
 
     globalShortcut.register("CommandOrControl+R", () => {
