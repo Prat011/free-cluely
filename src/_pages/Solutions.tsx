@@ -16,6 +16,10 @@ import { ProblemStatementData } from "../types/solutions"
 import { AudioResult } from "../types/audio"
 import SolutionCommands from "../components/Solutions/SolutionCommands"
 import Debug from "./Debug"
+import { useSpeechRecognition } from "../hooks/useSpeechRecognition"
+import { useSpeakerTranscription } from "../hooks/useSpeakerTranscription"
+import { useTranscriptionEntries } from "../hooks/useTranscriptionEntries"
+import TranscriptionDisplay from "../components/ui/TranscriptionDisplay"
 
 // (Using global ElectronAPI type from src/types/electron.d.ts)
 
@@ -134,6 +138,9 @@ const Solutions: React.FC<SolutionsProps> = ({ setView }) => {
   // Audio recording state
   const [audioRecording, setAudioRecording] = useState(false)
   const [audioResult, setAudioResult] = useState<AudioResult | null>(null)
+  const { transcript, interimText, isListening, start: startRecognition, stop: stopRecognition, isSupported: speechSupported } = useSpeechRecognition()
+  const { transcript: speakerTranscript, interimText: speakerInterim, isListening: isSpeakerListening, start: startSpeaker, stop: stopSpeaker } = useSpeakerTranscription()
+  const { entries, reset: resetEntries } = useTranscriptionEntries(transcript, speakerTranscript)
 
   const [debugProcessing, setDebugProcessing] = useState(false)
   const [problemStatementData, setProblemStatementData] =
@@ -262,11 +269,16 @@ const Solutions: React.FC<SolutionsProps> = ({ setView }) => {
           const chunks: Blob[] = []
           mediaRecorder.ondataavailable = (e) => chunks.push(e.data)
           mediaRecorder.start()
+          if (speechSupported) startRecognition()
+          startSpeaker()
           setAudioRecording(true)
+          resetEntries()
           // Record for 5 seconds (or adjust as needed)
           setTimeout(() => mediaRecorder.stop(), 5000)
           mediaRecorder.onstop = async () => {
             setAudioRecording(false)
+            stopRecognition()
+            stopSpeaker()
             const blob = new Blob(chunks, { type: chunks[0]?.type || 'audio/webm' })
             const reader = new FileReader()
             reader.onloadend = async () => {
@@ -483,6 +495,15 @@ const Solutions: React.FC<SolutionsProps> = ({ setView }) => {
           <SolutionCommands
             extraScreenshots={extraScreenshots}
             onTooltipVisibilityChange={handleTooltipVisibilityChange}
+          />
+
+          {/* Transcription Display */}
+          <TranscriptionDisplay
+            entries={entries}
+            micInterim={interimText}
+            speakerInterim={speakerInterim}
+            isListening={isListening}
+            isSpeakerListening={isSpeakerListening}
           />
 
           {/* Main Content - Modified width constraints */}

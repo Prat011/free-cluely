@@ -15,6 +15,7 @@ export class WindowHelper {
   private windowPosition: { x: number; y: number } | null = null
   private windowSize: { width: number; height: number } | null = null
   private appState: AppState
+  private isClickThrough: boolean = false
 
   // Initialize with explicit number type and 0 value
   private screenWidth: number = 0
@@ -91,7 +92,7 @@ export class WindowHelper {
       hasShadow: false,
       backgroundColor: "#00000000",
       focusable: true,
-      resizable: true,
+      resizable: false, // transparent + resizable = black bg bug in Electron 38+ (#48421)
       movable: true,
       x: 100, // Start at a visible position
       y: 100
@@ -100,6 +101,13 @@ export class WindowHelper {
     this.mainWindow = new BrowserWindow(windowSettings)
     // this.mainWindow.webContents.openDevTools()
     this.mainWindow.setContentProtection(true)
+
+    // Allow renderer to capture system audio via getDisplayMedia
+    this.mainWindow.webContents.session.setDisplayMediaRequestHandler(
+      (_request, callback) => {
+        callback({ video: null, audio: "loopback" } as any)
+      }
+    )
 
     if (process.platform === "darwin") {
       this.mainWindow.setVisibleOnAllWorkspaces(true, {
@@ -209,6 +217,7 @@ export class WindowHelper {
     }
 
     this.mainWindow.showInactive()
+    this.mainWindow.setContentProtection(true) // re-apply after show (Electron 34+ bug #45844)
 
     this.isWindowVisible = true
   }
@@ -263,8 +272,9 @@ export class WindowHelper {
     this.mainWindow.show()
     this.mainWindow.focus()
     this.mainWindow.setAlwaysOnTop(true)
+    this.mainWindow.setContentProtection(true) // re-apply after show (Electron 34+ bug #45844)
     this.isWindowVisible = true
-    
+
     console.log(`Window centered and shown`)
   }
 
@@ -341,5 +351,112 @@ export class WindowHelper {
       Math.round(this.currentX),
       Math.round(this.currentY)
     )
+  }
+
+  // === Click-through overlay mode (Phase 4.2) ===
+
+  public toggleClickThrough(): boolean {
+    if (!this.mainWindow || this.mainWindow.isDestroyed()) return false
+
+    this.isClickThrough = !this.isClickThrough
+
+    if (this.isClickThrough) {
+      // Enable click-through, but keep a drag handle area (top-left 24px)
+      this.mainWindow.setIgnoreMouseEvents(true, { forward: true })
+    } else {
+      this.mainWindow.setIgnoreMouseEvents(false)
+    }
+
+    // Notify renderer about click-through state
+    this.mainWindow.webContents.send("click-through-changed", this.isClickThrough)
+    return this.isClickThrough
+  }
+
+  public getIsClickThrough(): boolean {
+    return this.isClickThrough
+  }
+
+  // === Multi-monitor support (Phase 4.4) ===
+
+  public getAvailableDisplays(): Array<{ id: number; label: string; width: number; height: number; x: number; y: number }> {
+    return screen.getAllDisplays().map((display, index) => ({
+      id: display.id,
+      label: `Display ${index + 1}${display.id === screen.getPrimaryDisplay().id ? " (Primary)" : ""}`,
+      width: display.workAreaSize.width,
+      height: display.workAreaSize.height,
+      x: display.bounds.x,
+      y: display.bounds.y,
+    }))
+  }
+
+  public moveToDisplay(displayId: number): void {
+    if (!this.mainWindow || this.mainWindow.isDestroyed()) return
+
+    const targetDisplay = screen.getAllDisplays().find(d => d.id === displayId)
+    if (!targetDisplay) return
+
+    const bounds = this.mainWindow.getBounds()
+    const centerX = targetDisplay.bounds.x + Math.floor((targetDisplay.workAreaSize.width - bounds.width) / 2)
+    const centerY = targetDisplay.bounds.y + Math.floor((targetDisplay.workAreaSize.height - bounds.height) / 2)
+
+    this.mainWindow.setBounds({
+      x: centerX,
+      y: centerY,
+      width: bounds.width,
+      height: bounds.height,
+    })
+
+    this.windowPosition = { x: centerX, y: centerY }
+    this.currentX = centerX
+    this.currentY = centerY
+
+    // Update screen dimensions for the new display
+    this.screenWidth = targetDisplay.workAreaSize.width
+    this.screenHeight = targetDisplay.workAreaSize.height
+  }
+
+  public snapTo(position: "left" | "right" | "top-left" | "top-right" | "bottom-left" | "bottom-right"): void {
+    if (!this.mainWindow || this.mainWindow.isDestroyed()) return
+
+    const currentDisplay = screen.getDisplayNearestPoint({ x: this.currentX, y: this.currentY })
+    const { x: dX, y: dY } = currentDisplay.bounds
+    const { width: dW, height: dH } = currentDisplay.workAreaSize
+    const bounds = this.mainWindow.getBounds()
+    const margin = 10
+
+    let newX = dX
+    let newY = dY
+
+    switch (position) {
+      case "left":
+        newX = dX + margin
+        newY = dY + Math.floor((dH - bounds.height) / 2)
+        break
+      case "right":
+        newX = dX + dW - bounds.width - margin
+        newY = dY + Math.floor((dH - bounds.height) / 2)
+        break
+      case "top-left":
+        newX = dX + margin
+        newY = dY + margin
+        break
+      case "top-right":
+        newX = dX + dW - bounds.width - margin
+        newY = dY + margin
+        break
+      case "bottom-left":
+        newX = dX + margin
+        newY = dY + dH - bounds.height - margin
+        break
+      case "bottom-right":
+        newX = dX + dW - bounds.width - margin
+        newY = dY + dH - bounds.height - margin
+        break
+    }
+
+    this.mainWindow.setBounds({ x: newX, y: newY, width: bounds.width, height: bounds.height })
+    this.windowPosition = { x: newX, y: newY }
+    this.currentX = newX
+    this.currentY = newY
   }
 }

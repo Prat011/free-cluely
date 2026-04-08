@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Region Select</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body {
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+      cursor: crosshair;
+      background: transparent;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    #overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.3);
+    }
+    #selection {
+      position: fixed;
+      border: 2px solid #00d4ff;
+      background: rgba(0, 212, 255, 0.1);
+      box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.4);
+      display: none;
+      pointer-events: none;
+    }
+    #hint {
+      position: fixed;
+      bottom: 40px;
+      left: 50%;
+      transform: translateX(-50%);
+      color: white;
+      font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+      font-size: 14px;
+      background: rgba(0, 0, 0, 0.7);
+      padding: 8px 16px;
+      border-radius: 8px;
+      pointer-events: none;
+    }
+    #dimensions {
+      position: fixed;
+      color: #00d4ff;
+      font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+      font-size: 12px;
+      background: rgba(0, 0, 0, 0.7);
+      padding: 2px 6px;
+      border-radius: 4px;
+      display: none;
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body>
+  <div id="overlay"></div>
+  <div id="selection"></div>
+  <div id="dimensions"></div>
+  <div id="hint">Drag to select a region. Press Escape to cancel.</div>
+  <script>
+    const { ipcRenderer } = require("electron");
+    const sel = document.getElementById("selection");
+    const dims = document.getElementById("dimensions");
+    const hint = document.getElementById("hint");
+
+    let startX = 0, startY = 0;
+    let isDragging = false;
+
+    document.addEventListener("mousedown", (e) => {
+      startX = e.clientX;
+      startY = e.clientY;
+      isDragging = true;
+      sel.style.display = "block";
+      hint.style.display = "none";
+      updateSelection(e.clientX, e.clientY);
+    });
+
+    document.addEventListener("mousemove", (e) => {
+      if (!isDragging) return;
+      updateSelection(e.clientX, e.clientY);
+    });
+
+    document.addEventListener("mouseup", (e) => {
+      if (!isDragging) return;
+      isDragging = false;
+
+      const rect = getRect(e.clientX, e.clientY);
+      if (rect.width < 5 || rect.height < 5) {
+        // Too small, cancel
+        ipcRenderer.send("region-select-cancel");
+        return;
+      }
+
+      ipcRenderer.send("region-select-done", rect);
+    });
+
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") {
+        ipcRenderer.send("region-select-cancel");
+      }
+    });
+
+    function getRect(curX, curY) {
+      const x = Math.min(startX, curX);
+      const y = Math.min(startY, curY);
+      const w = Math.abs(curX - startX);
+      const h = Math.abs(curY - startY);
+      return { x, y, width: w, height: h };
+    }
+
+    function updateSelection(curX, curY) {
+      const r = getRect(curX, curY);
+      sel.style.left = r.x + "px";
+      sel.style.top = r.y + "px";
+      sel.style.width = r.width + "px";
+      sel.style.height = r.height + "px";
+
+      dims.style.display = "block";
+      dims.style.left = (r.x + r.width + 8) + "px";
+      dims.style.top = (r.y + r.height + 8) + "px";
+      dims.textContent = `${r.width} x ${r.height}`;
+    }
+  </script>
+</body>
+</html>

@@ -78,6 +78,30 @@ export class ShortcutsHelper {
       this.appState.moveWindowUp()
     })
 
+    // Region capture (Phase 4.1)
+    globalShortcut.register("CommandOrControl+Shift+H", async () => {
+      console.log("Region capture shortcut pressed...")
+      const mainWindow = this.appState.getMainWindow()
+      if (!mainWindow) return
+      try {
+        const result = await this.appState.regionSelectHelper.startCapture()
+        if (result) {
+          mainWindow.webContents.send("screenshot-taken", {
+            path: result.path,
+            preview: result.preview
+          })
+        }
+      } catch (error) {
+        console.error("Error in region capture:", error)
+      }
+    })
+
+    // Click-through toggle (Phase 4.2)
+    globalShortcut.register("CommandOrControl+Shift+T", () => {
+      console.log("Toggle click-through mode")
+      this.appState.toggleClickThrough()
+    })
+
     globalShortcut.register("CommandOrControl+B", () => {
       this.appState.toggleMainWindow()
       // If window exists and we're showing it, bring it to front

@@ -1,19 +1,24 @@
 import React, { useState, useEffect, useRef } from "react"
 import { IoLogOutOutline } from "react-icons/io5"
-import { Dialog, DialogContent, DialogClose } from "../ui/dialog"
+import { useSpeechRecognition } from "../../hooks/useSpeechRecognition"
+import { useSpeakerTranscription } from "../../hooks/useSpeakerTranscription"
+import { useTranscriptionEntries } from "../../hooks/useTranscriptionEntries"
+import TranscriptionDisplay from "../ui/TranscriptionDisplay"
 
 interface QueueCommandsProps {
   onTooltipVisibilityChange: (visible: boolean, height: number) => void
   screenshots: Array<{ path: string; preview: string }>
   onChatToggle: () => void
   onSettingsToggle: () => void
+  onMeetingToggle: () => void
 }
 
 const QueueCommands: React.FC<QueueCommandsProps> = ({
   onTooltipVisibilityChange,
   screenshots,
   onChatToggle,
-  onSettingsToggle
+  onSettingsToggle,
+  onMeetingToggle,
 }) => {
   const [isTooltipVisible, setIsTooltipVisible] = useState(false)
   const tooltipRef = useRef<HTMLDivElement>(null)
@@ -21,7 +26,9 @@ const QueueCommands: React.FC<QueueCommandsProps> = ({
   const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null)
   const [audioResult, setAudioResult] = useState<string | null>(null)
   const chunks = useRef<Blob[]>([])
-  // Remove all chat-related state, handlers, and the Dialog overlay from this file.
+  const { transcript, interimText, isListening, start: startRecognition, stop: stopRecognition, isSupported: speechSupported } = useSpeechRecognition()
+  const { transcript: speakerTranscript, interimText: speakerInterim, isListening: isSpeakerListening, start: startSpeaker, stop: stopSpeaker } = useSpeakerTranscription()
+  const { entries, reset: resetEntries } = useTranscriptionEntries(transcript, speakerTranscript)
 
   useEffect(() => {
     let tooltipHeight = 0
@@ -63,19 +70,22 @@ const QueueCommands: React.FC<QueueCommandsProps> = ({
         }
         setMediaRecorder(recorder)
         recorder.start()
+        if (speechSupported) startRecognition()
+        startSpeaker()
         setIsRecording(true)
+        resetEntries()
       } catch (err) {
         setAudioResult('Could not start recording.')
       }
     } else {
       // Stop recording
       mediaRecorder?.stop()
+      stopRecognition()
+      stopSpeaker()
       setIsRecording(false)
       setMediaRecorder(null)
     }
   }
-
-  // Remove handleChatSend function
 
   return (
     <div className="w-fit">
@@ -92,9 +102,6 @@ const QueueCommands: React.FC<QueueCommandsProps> = ({
             </button>
           </div>
         </div>
-
-        {/* Screenshot */}
-        {/* Removed screenshot button from main bar for seamless screenshot-to-LLM UX */}
 
         {/* Solve Command */}
         {screenshots.length > 0 && (
@@ -126,6 +133,26 @@ const QueueCommands: React.FC<QueueCommandsProps> = ({
           </button>
         </div>
 
+        {/* Region Capture Button */}
+        <div className="flex items-center gap-2">
+          <button
+            className="bg-white/10 hover:bg-white/20 transition-colors rounded-md px-2 py-1 text-[11px] leading-none text-white/70 flex items-center gap-1"
+            onClick={async () => {
+              try {
+                const result = await window.electronAPI.startRegionCapture()
+                if (result.success) {
+                  // Region added to queue via screenshot-taken event from shortcut handler
+                }
+              } catch (err) {
+                console.error("Region capture failed:", err)
+              }
+            }}
+            type="button"
+          >
+            ✂️ Region
+          </button>
+        </div>
+
         {/* Chat Button */}
         <div className="flex items-center gap-2">
           <button
@@ -134,6 +161,17 @@ const QueueCommands: React.FC<QueueCommandsProps> = ({
             type="button"
           >
             💬 Chat
+          </button>
+        </div>
+
+        {/* Meeting Button */}
+        <div className="flex items-center gap-2">
+          <button
+            className="bg-white/10 hover:bg-white/20 transition-colors rounded-md px-2 py-1 text-[11px] leading-none text-white/70 flex items-center gap-1"
+            onClick={onMeetingToggle}
+            type="button"
+          >
+            📅 Meeting
           </button>
         </div>
 
@@ -147,9 +185,6 @@ const QueueCommands: React.FC<QueueCommandsProps> = ({
             ⚙️ Models
           </button>
         </div>
-
-        {/* Add this button in the main button row, before the separator and sign out */}
-        {/* Remove the Chat button */}
 
         {/* Question mark with tooltip */}
         <div
@@ -208,6 +243,27 @@ const QueueCommands: React.FC<QueueCommandsProps> = ({
                       </p>
                     </div>
 
+                    {/* Region Capture Command */}
+                    <div className="space-y-1">
+                      <div className="flex items-center justify-between">
+                        <span className="truncate">Region Capture</span>
+                        <div className="flex gap-1 flex-shrink-0">
+                          <span className="bg-white/10 px-1.5 py-0.5 rounded text-[10px] leading-none">
+                            ⌘
+                          </span>
+                          <span className="bg-white/10 px-1.5 py-0.5 rounded text-[10px] leading-none">
+                            ⇧
+                          </span>
+                          <span className="bg-white/10 px-1.5 py-0.5 rounded text-[10px] leading-none">
+                            H
+                          </span>
+                        </div>
+                      </div>
+                      <p className="text-[10px] leading-relaxed text-white/70 truncate">
+                        Select and capture a specific region of the screen.
+                      </p>
+                    </div>
+
                     {/* Solve Command */}
                     <div className="space-y-1">
                       <div className="flex items-center justify-between">
@@ -244,14 +300,20 @@ const QueueCommands: React.FC<QueueCommandsProps> = ({
           <IoLogOutOutline className="w-4 h-4" />
         </button>
       </div>
+      {/* Transcription Display */}
+      <TranscriptionDisplay
+        entries={entries}
+        micInterim={interimText}
+        speakerInterim={speakerInterim}
+        isListening={isListening}
+        isSpeakerListening={isSpeakerListening}
+      />
       {/* Audio Result Display */}
       {audioResult && (
         <div className="mt-2 p-2 bg-white/10 rounded text-white text-xs max-w-md">
           <span className="font-semibold">Audio Result:</span> {audioResult}
         </div>
       )}
-      {/* Chat Dialog Overlay */}
-      {/* Remove the Dialog component */}
     </div>
   )
 }

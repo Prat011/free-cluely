@@ -13,5 +13,6 @@
     "moduleResolution": "node",
     "resolveJsonModule": true
   },
-  "include": ["*.ts"]
+  "include": ["**/*.ts"],
+  "exclude": ["**/*.test.ts"]
 }
