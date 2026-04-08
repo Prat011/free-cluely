@@ -19,20 +19,17 @@ export class ScreenshotHelper {
   constructor(view: "queue" | "solutions" = "queue") {
     this.view = view
 
-    // Initialize directories
-    this.screenshotDir = path.join(app.getPath("userData"), "screenshots")
+    // Use temp directory to avoid spaces in path — screenshot-desktop's filename
+    // sanitization strips spaces, breaking paths like "Application Support"
+    this.screenshotDir = path.join(app.getPath("temp"), "interview-coder-screenshots")
     this.extraScreenshotDir = path.join(
-      app.getPath("userData"),
-      "extra_screenshots"
+      app.getPath("temp"),
+      "interview-coder-extra-screenshots"
     )
 
     // Create directories if they don't exist
-    if (!fs.existsSync(this.screenshotDir)) {
-      fs.mkdirSync(this.screenshotDir)
-    }
-    if (!fs.existsSync(this.extraScreenshotDir)) {
-      fs.mkdirSync(this.extraScreenshotDir)
-    }
+    fs.mkdirSync(this.screenshotDir, { recursive: true })
+    fs.mkdirSync(this.extraScreenshotDir, { recursive: true })
   }
 
   public getView(): "queue" | "solutions" {
@@ -90,6 +87,14 @@ export class ScreenshotHelper {
         screenshotPath = path.join(this.screenshotDir, `${uuidv4()}.png`)
         await screenshot({ filename: screenshotPath })
 
+        // Verify the file was actually created (screencapture can fail silently on macOS without screen recording permission)
+        if (!fs.existsSync(screenshotPath)) {
+          throw new Error(
+            "Screenshot file was not created. On macOS, please grant Screen Recording permission: " +
+            "System Settings > Privacy & Security > Screen Recording > enable this app."
+          )
+        }
+
         this.screenshotQueue.push(screenshotPath)
         if (this.screenshotQueue.length > this.MAX_SCREENSHOTS) {
           const removedPath = this.screenshotQueue.shift()
@@ -104,6 +109,14 @@ export class ScreenshotHelper {
       } else {
         screenshotPath = path.join(this.extraScreenshotDir, `${uuidv4()}.png`)
         await screenshot({ filename: screenshotPath })
+
+        // Verify the file was actually created
+        if (!fs.existsSync(screenshotPath)) {
+          throw new Error(
+            "Screenshot file was not created. On macOS, please grant Screen Recording permission: " +
+            "System Settings > Privacy & Security > Screen Recording > enable this app."
+          )
+        }
 
         this.extraScreenshotQueue.push(screenshotPath)
         if (this.extraScreenshotQueue.length > this.MAX_SCREENSHOTS) {
