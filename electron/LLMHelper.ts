@@ -1,4 +1,5 @@
 import { GoogleGenerativeAI, GenerativeModel } from "@google/generative-ai"
+import { time, timeStamp } from "console"
 import fs from "fs"
 
 interface OllamaResponse {
@@ -50,7 +51,19 @@ export class LLMHelper {
     return text;
   }
 
-  private async callOllama(prompt: string): Promise<string> {
+  private async callOllama(promptOptions: any[]) {
+    let prompt = ""
+    let images: string[];
+    if (promptOptions.length > 0) {
+      prompt = promptOptions.shift();
+    }
+    if (promptOptions.length > 0) {
+      if (promptOptions[0].mimeType == "image/png") {
+        for (let i=0; i<promptOptions.length; i++) {
+          images[images.length] = promptOptions[i].data;
+        }
+      }
+    }
     try {
       const response = await fetch(`${this.ollamaUrl}/api/generate`, {
         method: 'POST',
@@ -60,6 +73,7 @@ export class LLMHelper {
         body: JSON.stringify({
           model: this.ollamaModel,
           prompt: prompt,
+          images: images,
           stream: false,
           options: {
             temperature: 0.7,
@@ -73,7 +87,10 @@ export class LLMHelper {
       }
 
       const data: OllamaResponse = await response.json()
-      return data.response
+      return {
+        text: data.response,
+        timestamp: Date.now()
+      }
     } catch (error) {
       console.error("[LLMHelper] Error calling Ollama:", error)
       throw new Error(`Failed to connect to Ollama: ${error.message}. Make sure Ollama is running on ${this.ollamaUrl}`)
@@ -104,7 +121,7 @@ export class LLMHelper {
       }
 
       // Test the selected model works
-      const testResult = await this.callOllama("Hello")
+      const testResult = await this.callOllama(["Hello"])
       console.log(`[LLMHelper] Successfully initialized with model: ${this.ollamaModel}`)
     } catch (error) {
       console.error(`[LLMHelper] Failed to initialize Ollama model: ${error.message}`)
@@ -131,8 +148,10 @@ export class LLMHelper {
   "suggested_responses": ["First possible answer or action", "Second possible answer or action", "..."],
   "reasoning": "Explanation of why these suggestions are appropriate."
 }\nImportant: Return ONLY the JSON object, without any markdown formatting or code blocks.`
-
-      const result = await this.model.generateContent([prompt, ...imageParts])
+      if (this.useOllama) {
+        return await this.callOllama([prompt, ...imageParts])
+      }
+      const result = await this.model.generateContent([prompt, ...imageParts])  
       const response = await result.response
       const text = this.cleanJsonResponse(response.text())
       return JSON.parse(text)
@@ -155,6 +174,10 @@ export class LLMHelper {
 
     console.log("[LLMHelper] Calling Gemini LLM for solution...");
     try {
+      if (this.useOllama) {
+        console.log("[LLMHelper] Ollama LLM returned result.");
+        return await this.callOllama([prompt])
+      }
       const result = await this.model.generateContent(prompt)
       console.log("[LLMHelper] Gemini LLM returned result.");
       const response = await result.response
@@ -181,7 +204,9 @@ export class LLMHelper {
     "reasoning": "Explanation of why these suggestions are appropriate."
   }
 }\nImportant: Return ONLY the JSON object, without any markdown formatting or code blocks.`
-
+      if (this.useOllama) {
+        return await this.callOllama([prompt, ...imageParts])        
+      }
       const result = await this.model.generateContent([prompt, ...imageParts])
       const response = await result.response
       const text = this.cleanJsonResponse(response.text())
@@ -195,6 +220,7 @@ export class LLMHelper {
   }
 
   public async analyzeAudioFile(audioPath: string) {
+    //a new workflow will be needed to enable audio processing via ollama
     try {
       const audioData = await fs.promises.readFile(audioPath);
       const audioPart = {
@@ -215,6 +241,7 @@ export class LLMHelper {
   }
 
   public async analyzeAudioFromBase64(data: string, mimeType: string) {
+    //a new workflow will be needed to enable audio processing via ollama
     try {
       const audioPart = {
         inlineData: {
@@ -243,6 +270,9 @@ export class LLMHelper {
         }
       };
       const prompt = `${this.systemPrompt}\n\nDescribe the content of this image in a short, concise answer. In addition to your main answer, suggest several possible actions or responses the user could take next based on the image. Do not return a structured JSON object, just answer naturally as you would to a user. Be concise and brief.`;
+      if (this.useOllama) {
+        return await this.callOllama([prompt, imagePart]);        
+      }
       const result = await this.model.generateContent([prompt, imagePart]);
       const response = await result.response;
       const text = response.text();
@@ -256,8 +286,11 @@ export class LLMHelper {
   public async chatWithGemini(message: string): Promise<string> {
     try {
       if (this.useOllama) {
-        return this.callOllama(message);
+        console.log("[LLMHelper] chatting with Ollama model.")
+        const ollamaResponse = await this.callOllama([message]);
+        return ollamaResponse.text;
       } else if (this.model) {
+        console.log("[LLMHelper] chatting with Gemini model.")
         const result = await this.model.generateContent(message);
         const response = await result.response;
         return response.text();
@@ -265,7 +298,7 @@ export class LLMHelper {
         throw new Error("No LLM provider configured");
       }
     } catch (error) {
-      console.error("[LLMHelper] Error in chatWithGemini:", error);
+      console.error("[LLMHelper] Error in chatWithLLM:", error);
       throw error;
     }
   }
@@ -337,7 +370,7 @@ export class LLMHelper {
           return { success: false, error: `Ollama not available at ${this.ollamaUrl}` };
         }
         // Test with a simple prompt
-        await this.callOllama("Hello");
+        await this.callOllama(["Hello"]);
         return { success: true };
       } else {
         if (!this.model) {
