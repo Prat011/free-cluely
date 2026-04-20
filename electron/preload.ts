@@ -34,7 +34,12 @@ interface ElectronAPI {
   analyzeAudioFile: (path: string) => Promise<{ text: string; timestamp: number }>
   analyzeImageFile: (path: string) => Promise<void>
   quitApp: () => Promise<void>
-  
+  toggleWindow: () => Promise<void>
+  showWindow: () => Promise<void>
+  hideWindow: () => Promise<void>
+  processScreenshots: () => Promise<void>
+  resetView: () => Promise<void>
+
   // LLM Model Management
   getCurrentLlmConfig: () => Promise<{ provider: "ollama" | "gemini"; model: string; isOllama: boolean }>
   getAvailableOllamaModels: () => Promise<string[]>
@@ -179,7 +184,12 @@ contextBridge.exposeInMainWorld("electronAPI", {
   analyzeAudioFile: (path: string) => ipcRenderer.invoke("analyze-audio-file", path),
   analyzeImageFile: (path: string) => ipcRenderer.invoke("analyze-image-file", path),
   quitApp: () => ipcRenderer.invoke("quit-app"),
-  
+  toggleWindow: () => ipcRenderer.invoke("toggle-window"),
+  showWindow: () => ipcRenderer.invoke("show-window"),
+  hideWindow: () => ipcRenderer.invoke("hide-window"),
+  processScreenshots: () => ipcRenderer.invoke("process-screenshots"),
+  resetView: () => ipcRenderer.invoke("reset-view"),
+
   // LLM Model Management
   getCurrentLlmConfig: () => ipcRenderer.invoke("get-current-llm-config"),
   getAvailableOllamaModels: () => ipcRenderer.invoke("get-available-ollama-models"),
