@@ -1,5 +1,7 @@
 // Solutions.tsx
 import React, { useState, useEffect, useRef } from "react"
+import ReactMarkdown from "react-markdown"
+import remarkGfm from "remark-gfm"
 import { useQuery, useQueryClient } from "react-query"
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter"
 import { dracula } from "react-syntax-highlighter/dist/esm/styles/prism"
@@ -40,7 +42,15 @@ export const ContentSection = ({
       </div>
     ) : (
       <div className="text-[13px] leading-[1.4] text-gray-100 max-w-[600px]">
-        {content}
+        {typeof content === 'string' ? (
+          <div className="markdown-content">
+            <ReactMarkdown remarkPlugins={[remarkGfm]}>
+              {content}
+            </ReactMarkdown>
+          </div>
+        ) : (
+          content
+        )}
       </div>
     )}
   </div>
