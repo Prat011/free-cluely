@@ -21,7 +21,12 @@ export function initializeIpcHandlers(appState: AppState): void {
     try {
       const screenshotPath = await appState.takeScreenshot()
       const preview = await appState.getImagePreview(screenshotPath)
-      return { path: screenshotPath, preview }
+      const data = { path: screenshotPath, preview }
+      const mainWindow = appState.getMainWindow()
+      if (mainWindow && !mainWindow.isDestroyed()) {
+        mainWindow.webContents.send("screenshot-taken", data)
+      }
+      return data
     } catch (error) {
       console.error("Error taking screenshot:", error)
       throw error
@@ -52,6 +57,13 @@ export function initializeIpcHandlers(appState: AppState): void {
     } catch (error) {
       console.error("Error getting screenshots:", error)
       throw error
+    }
+  })
+
+  ipcMain.handle("finish-crop", async (event, cropData) => {
+    const helper = appState.getScreenshotHelper();
+    if (helper.cropResolve) {
+      helper.cropResolve(cropData);
     }
   })
 
@@ -105,10 +117,31 @@ export function initializeIpcHandlers(appState: AppState): void {
 
   ipcMain.handle("gemini-chat", async (event, message: string) => {
     try {
-      const result = await appState.processingHelper.getLLMHelper().chatWithGemini(message);
+      const result = await appState.processingHelper.getLLMHelper().chat(message);
       return result;
     } catch (error: any) {
       console.error("Error in gemini-chat handler:", error);
+      throw error;
+    }
+  });
+
+  ipcMain.handle("chat", async (event, message: string) => {
+    try {
+      const result = await appState.processingHelper.getLLMHelper().chat(message);
+      return result;
+    } catch (error: any) {
+      console.error("Error in chat handler:", error);
+      throw error;
+    }
+  });
+
+  ipcMain.handle("chat-with-screenshots", async (event, message: string, screenshotPaths: string[]) => {
+    try {
+      const llmHelper = appState.processingHelper.getLLMHelper();
+      const result = await llmHelper.chatWithScreenshots(message, screenshotPaths);
+      return result;
+    } catch (error: any) {
+      console.error("Error in chat-with-screenshots handler:", error);
       throw error;
     }
   });
@@ -166,8 +199,7 @@ export function initializeIpcHandlers(appState: AppState): void {
 
   ipcMain.handle("switch-to-ollama", async (_, model?: string, url?: string) => {
     try {
-      const llmHelper = appState.processingHelper.getLLMHelper();
-      await llmHelper.switchToOllama(model, url);
+      await appState.processingHelper.switchToOllama(model, url);
       return { success: true };
     } catch (error: any) {
       console.error("Error switching to Ollama:", error);
@@ -175,10 +207,19 @@ export function initializeIpcHandlers(appState: AppState): void {
     }
   });
 
+  ipcMain.handle("switch-to-groq", async (_, apiKey?: string) => {
+    try {
+      await appState.processingHelper.switchToGroq(apiKey);
+      return { success: true };
+    } catch (error: any) {
+      console.error("Error switching to Groq:", error);
+      return { success: false, error: error.message };
+    }
+  });
+
   ipcMain.handle("switch-to-gemini", async (_, apiKey?: string) => {
     try {
-      const llmHelper = appState.processingHelper.getLLMHelper();
-      await llmHelper.switchToGemini(apiKey);
+      await appState.processingHelper.switchToGemini(apiKey);
       return { success: true };
     } catch (error: any) {
       console.error("Error switching to Gemini:", error);

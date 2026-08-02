@@ -38,7 +38,9 @@ npm install
    **For Gemini (Cloud AI):**
    ```env
    GEMINI_API_KEY=your_api_key_here
+   GEMINI_MODEL=gemini-3.5-flash-lite
    ```
+   You can also start the app without a Gemini key and paste your Google AI Studio key later from the in-app Models panel.
    
    **For Ollama (Local/Private AI):**
    ```env
@@ -230,7 +232,7 @@ If you see other errors:
 ## Technical Details
 
 ### **AI Models Supported**
-- **Gemini 2.0 Flash** - Latest Google AI with vision capabilities
+- **Gemini 3.5 Flash Lite** - Current Google AI Studio model used by the app
 - **Llama 3.2** - Meta's advanced local model via Ollama
 - **CodeLlama** - Specialized coding assistance
 - **Mistral** - Lightweight, fast responses

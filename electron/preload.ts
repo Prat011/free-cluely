@@ -13,6 +13,10 @@ interface ElectronAPI {
   onScreenshotTaken: (
     callback: (data: { path: string; preview: string }) => void
   ) => () => void
+  onCropImage: (
+    callback: (data: { path: string; preview: string }) => void
+  ) => () => void
+  finishCrop: (cropData: { x: number, y: number, width: number, height: number } | null) => Promise<void>
   onSolutionsReady: (callback: (solutions: string) => void) => () => void
   onResetView: (callback: () => void) => () => void
   onSolutionStart: (callback: () => void) => () => void
@@ -32,13 +36,16 @@ interface ElectronAPI {
   moveWindowDown: () => Promise<void>
   analyzeAudioFromBase64: (data: string, mimeType: string) => Promise<{ text: string; timestamp: number }>
   analyzeAudioFile: (path: string) => Promise<{ text: string; timestamp: number }>
-  analyzeImageFile: (path: string) => Promise<void>
+  analyzeImageFile: (path: string) => Promise<{ text: string; timestamp: number }>
+  chat: (message: string) => Promise<string>
+  chatWithScreenshots: (message: string, screenshotPaths: string[]) => Promise<string>
   quitApp: () => Promise<void>
   
   // LLM Model Management
-  getCurrentLlmConfig: () => Promise<{ provider: "ollama" | "gemini"; model: string; isOllama: boolean }>
+  getCurrentLlmConfig: () => Promise<{ provider: "ollama" | "gemini" | "groq"; model: string; isOllama: boolean }>
   getAvailableOllamaModels: () => Promise<string[]>
   switchToOllama: (model?: string, url?: string) => Promise<{ success: boolean; error?: string }>
+  switchToGroq: (apiKey?: string) => Promise<{ success: boolean; error?: string }>
   switchToGemini: (apiKey?: string) => Promise<{ success: boolean; error?: string }>
   testLlmConnection: () => Promise<{ success: boolean; error?: string }>
   
@@ -82,6 +89,18 @@ contextBridge.exposeInMainWorld("electronAPI", {
       ipcRenderer.removeListener("screenshot-taken", subscription)
     }
   },
+  onCropImage: (
+    callback: (data: { path: string; preview: string }) => void
+  ) => {
+    const subscription = (_: any, data: { path: string; preview: string }) =>
+      callback(data)
+    ipcRenderer.on("crop-image", subscription)
+    return () => {
+      ipcRenderer.removeListener("crop-image", subscription)
+    }
+  },
+  finishCrop: (cropData: { x: number, y: number, width: number, height: number } | null) =>
+    ipcRenderer.invoke("finish-crop", cropData),
   onSolutionsReady: (callback: (solutions: string) => void) => {
     const subscription = (_: any, solutions: string) => callback(solutions)
     ipcRenderer.on("solutions-ready", subscription)
@@ -178,12 +197,15 @@ contextBridge.exposeInMainWorld("electronAPI", {
   analyzeAudioFromBase64: (data: string, mimeType: string) => ipcRenderer.invoke("analyze-audio-base64", data, mimeType),
   analyzeAudioFile: (path: string) => ipcRenderer.invoke("analyze-audio-file", path),
   analyzeImageFile: (path: string) => ipcRenderer.invoke("analyze-image-file", path),
+  chat: (message: string) => ipcRenderer.invoke("chat", message),
+  chatWithScreenshots: (message: string, screenshotPaths: string[]) => ipcRenderer.invoke("chat-with-screenshots", message, screenshotPaths),
   quitApp: () => ipcRenderer.invoke("quit-app"),
   
   // LLM Model Management
   getCurrentLlmConfig: () => ipcRenderer.invoke("get-current-llm-config"),
   getAvailableOllamaModels: () => ipcRenderer.invoke("get-available-ollama-models"),
   switchToOllama: (model?: string, url?: string) => ipcRenderer.invoke("switch-to-ollama", model, url),
+  switchToGroq: (apiKey?: string) => ipcRenderer.invoke("switch-to-groq", apiKey),
   switchToGemini: (apiKey?: string) => ipcRenderer.invoke("switch-to-gemini", apiKey),
   testLlmConnection: () => ipcRenderer.invoke("test-llm-connection"),
   

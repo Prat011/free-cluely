@@ -27,9 +27,9 @@ const ScreenshotItem: React.FC<ScreenshotItemProps> = ({
   return (
     <>
       <div
-        className={`border border-white relative ${isLoading ? "" : "group"}`}
+        className={`relative aspect-[16/10] overflow-hidden rounded-lg border border-white/40 bg-black/20 ${isLoading ? "" : "group"}`}
       >
-        <div className="w-full h-full relative">
+        <div className="absolute inset-0">
           {isLoading && (
             <div className="absolute inset-0 bg-black bg-opacity-50 z-10 flex items-center justify-center">
               <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" />

@@ -136,3 +136,11 @@ dist
 .yarn/build-state.yml
 .yarn/install-state.gz
 .pnp.*
+
+release/*.dmg
+release/**/*.app
+release/**/*.asar
+*.dmg
+.DS_Store   
+.code-review-graph
+.claude
