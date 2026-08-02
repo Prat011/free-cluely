@@ -13,5 +13,5 @@
     "moduleResolution": "node",
     "resolveJsonModule": true
   },
-  "include": ["*.ts"]
+  "include": ["*.ts", "ai/**/*.ts", "providers/**/*.ts"]
 }

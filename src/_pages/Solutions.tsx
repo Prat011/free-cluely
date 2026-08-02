@@ -39,7 +39,7 @@ export const ContentSection = ({
         </p>
       </div>
     ) : (
-      <div className="text-[13px] leading-[1.4] text-gray-100 max-w-[600px]">
+      <div className="text-[13px] leading-[1.4] text-gray-100 max-w-full break-words whitespace-pre-wrap">
         {content}
       </div>
     )}
@@ -77,7 +77,8 @@ const SolutionSection = ({
             margin: 0,
             padding: "1rem",
             whiteSpace: "pre-wrap",
-            wordBreak: "break-all"
+            wordBreak: "break-word",
+            overflowX: "auto"
           }}
           wrapLongLines={true}
         >
@@ -247,55 +248,12 @@ const Solutions: React.FC<SolutionsProps> = ({ setView }) => {
         }, 0)
       }),
       window.electronAPI.onSolutionStart(async () => {
-        // Reset UI state for a new solution
         setSolutionData(null)
         setThoughtsData(null)
         setTimeComplexityData(null)
         setSpaceComplexityData(null)
         setCustomContent(null)
         setAudioResult(null)
-
-        // Start audio recording from user's microphone
-        try {
-          const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
-          const mediaRecorder = new MediaRecorder(stream)
-          const chunks: Blob[] = []
-          mediaRecorder.ondataavailable = (e) => chunks.push(e.data)
-          mediaRecorder.start()
-          setAudioRecording(true)
-          // Record for 5 seconds (or adjust as needed)
-          setTimeout(() => mediaRecorder.stop(), 5000)
-          mediaRecorder.onstop = async () => {
-            setAudioRecording(false)
-            const blob = new Blob(chunks, { type: chunks[0]?.type || 'audio/webm' })
-            const reader = new FileReader()
-            reader.onloadend = async () => {
-              const base64Data = (reader.result as string).split(',')[1]
-              // Send audio to Gemini for analysis
-              try {
-                const result = await window.electronAPI.analyzeAudioFromBase64(
-                  base64Data,
-                  blob.type
-                )
-                // Store result in react-query cache
-                queryClient.setQueryData(["audio_result"], result)
-                setAudioResult(result)
-              } catch (err) {
-                console.error('Audio analysis failed:', err)
-              }
-            }
-            reader.readAsDataURL(blob)
-          }
-        } catch (err) {
-          console.error('Audio recording error:', err)
-        }
-
-        // Simulate receiving custom content shortly after start
-        setTimeout(() => {
-          setCustomContent(
-            "This is the dynamically generated content appearing after loading starts."
-          )
-        }, 1500) // Example delay
       }),
       //if there was an error processing the initial solution
       window.electronAPI.onSolutionError((error: string) => {
@@ -453,7 +411,7 @@ const Solutions: React.FC<SolutionsProps> = ({ setView }) => {
           />
         </>
       ) : (
-        <div ref={contentRef} className="relative space-y-3 px-4 py-3">
+        <div ref={contentRef} className="relative w-full min-w-0 space-y-3 px-3 sm:px-4 py-3 overflow-x-hidden">
           <Toast
             open={toastOpen}
             onOpenChange={setToastOpen}
@@ -466,9 +424,9 @@ const Solutions: React.FC<SolutionsProps> = ({ setView }) => {
 
           {/* Conditionally render the screenshot queue if solutionData is available */}
           {solutionData && (
-            <div className="bg-transparent w-fit">
+            <div className="bg-transparent w-full min-w-0">
               <div className="pb-3">
-                <div className="space-y-3 w-fit">
+                <div className="space-y-3 w-full min-w-0">
                   <ScreenshotQueue
                     isLoading={debugProcessing}
                     screenshots={extraScreenshots}
@@ -486,9 +444,9 @@ const Solutions: React.FC<SolutionsProps> = ({ setView }) => {
           />
 
           {/* Main Content - Modified width constraints */}
-          <div className="w-full text-sm text-black bg-black/60 rounded-md">
+          <div className="w-full min-w-0 text-sm text-black bg-black/60 rounded-md overflow-hidden">
             <div className="rounded-lg overflow-hidden">
-              <div className="px-4 py-3 space-y-4 max-w-full">
+              <div className="px-3 sm:px-4 py-3 space-y-4 max-w-full min-w-0">
                 {/* Show Screenshot or Audio Result as main output if validation_type is manual */}
                 {problemStatementData?.validation_type === "manual" ? (
                   <ContentSection

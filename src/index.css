@@ -2,6 +2,20 @@
 @tailwind components;
 @tailwind utilities;
 
+html,
+body,
+#root {
+  width: 100%;
+  min-width: 320px;
+  height: 100%;
+  margin: 0;
+  overflow-x: hidden;
+}
+
+* {
+  box-sizing: border-box;
+}
+
 /* Liquid Glass Effect Base */
 .liquid-glass {
   background: rgba(255, 255, 255, 0.25);
@@ -143,9 +157,7 @@ button, input, select, textarea, .interactive {
     inset 0 -1px 0 rgba(0, 0, 0, 0.1);
   position: relative;
   overflow: hidden;
-  height: 32px !important;
-  min-height: 32px !important;
-  max-height: 32px !important;
+  min-height: 32px;
 }
 
 /* Shimmer effect for bar variant */

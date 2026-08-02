@@ -23,7 +23,7 @@ const ScreenshotQueue: React.FC<ScreenshotQueueProps> = ({
   const displayScreenshots = screenshots.slice(0, 5)
 
   return (
-    <div className="grid grid-cols-5 gap-4">
+    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
       {displayScreenshots.map((screenshot, index) => (
         <ScreenshotItem
           key={screenshot.path}

@@ -3,6 +3,7 @@ import Queue from "./_pages/Queue"
 import { ToastViewport } from "@radix-ui/react-toast"
 import { useEffect, useRef, useState } from "react"
 import Solutions from "./_pages/Solutions"
+import CropWindow from "./_pages/CropWindow"
 import { QueryClient, QueryClientProvider } from "react-query"
 
 declare global {
@@ -23,7 +24,9 @@ declare global {
       ) => () => void
       onProcessingNoScreenshots: (callback: () => void) => () => void
       onResetView: (callback: () => void) => () => void
-      takeScreenshot: () => Promise<void>
+      takeScreenshot: () => Promise<{ path: string; preview: string }>
+      onCropImage: (callback: (data: { path: string; preview: string }) => void) => () => void
+      finishCrop: (cropData: { x: number; y: number; width: number; height: number } | null) => Promise<void>
 
       //INITIAL SOLUTION EVENTS
       deleteScreenshot: (
@@ -42,6 +45,11 @@ declare global {
       // Audio Processing
       analyzeAudioFromBase64: (data: string, mimeType: string) => Promise<{ text: string; timestamp: number }>
       analyzeAudioFile: (path: string) => Promise<{ text: string; timestamp: number }>
+      analyzeImageFile: (path: string) => Promise<{ text: string; timestamp: number }>
+
+      // Chat
+      chat: (message: string) => Promise<string>
+      chatWithScreenshots: (message: string, screenshotPaths: string[]) => Promise<string>
 
       moveWindowLeft: () => Promise<void>
       moveWindowRight: () => Promise<void>
@@ -50,9 +58,10 @@ declare global {
       quitApp: () => Promise<void>
       
       // LLM Model Management
-      getCurrentLlmConfig: () => Promise<{ provider: "ollama" | "gemini"; model: string; isOllama: boolean }>
+      getCurrentLlmConfig: () => Promise<{ provider: "ollama" | "gemini" | "groq"; model: string; isOllama: boolean }>
       getAvailableOllamaModels: () => Promise<string[]>
       switchToOllama: (model?: string, url?: string) => Promise<{ success: boolean; error?: string }>
+      switchToGroq: (apiKey?: string) => Promise<{ success: boolean; error?: string }>
       switchToGemini: (apiKey?: string) => Promise<{ success: boolean; error?: string }>
       testLlmConnection: () => Promise<{ success: boolean; error?: string }>
       
@@ -75,20 +84,6 @@ const App: React.FC = () => {
   const containerRef = useRef<HTMLDivElement>(null)
 
   // Effect for height monitoring
-  useEffect(() => {
-    const cleanup = window.electronAPI.onResetView(() => {
-      console.log("Received 'reset-view' message from main process.")
-      queryClient.invalidateQueries(["screenshots"])
-      queryClient.invalidateQueries(["problem_statement"])
-      queryClient.invalidateQueries(["solution"])
-      queryClient.invalidateQueries(["new_solution"])
-      setView("queue")
-    })
-
-    return () => {
-      cleanup()
-    }
-  }, [])
 
   useEffect(() => {
     if (!containerRef.current) return
@@ -163,8 +158,26 @@ const App: React.FC = () => {
     return () => cleanupFunctions.forEach((cleanup) => cleanup())
   }, [])
 
+  const [isCropView, setIsCropView] = useState(() => window.location.hash === "#/crop")
+
+  useEffect(() => {
+    const handleHashChange = () => {
+      setIsCropView(window.location.hash === "#/crop")
+    }
+    window.addEventListener("hashchange", handleHashChange)
+    return () => window.removeEventListener("hashchange", handleHashChange)
+  }, [])
+
+  if (isCropView) {
+    return (
+      <div className="min-h-screen w-screen overflow-hidden bg-transparent">
+        <CropWindow />
+      </div>
+    )
+  }
+
   return (
-    <div ref={containerRef} className="min-h-0">
+    <div ref={containerRef} className="min-h-screen w-full min-w-0 overflow-x-hidden">
       <QueryClientProvider client={queryClient}>
         <ToastProvider>
           {view === "queue" ? (

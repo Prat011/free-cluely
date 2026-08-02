@@ -1,6 +1,6 @@
 
 import { BrowserWindow, screen } from "electron"
-import { AppState } from "main"
+import { AppState } from "./main"
 import path from "node:path"
 
 const isDev = process.env.NODE_ENV === "development"

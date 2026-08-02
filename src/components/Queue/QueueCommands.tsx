@@ -7,19 +7,20 @@ interface QueueCommandsProps {
   screenshots: Array<{ path: string; preview: string }>
   onChatToggle: () => void
   onSettingsToggle: () => void
+  onAudioResult?: (text: string) => void
 }
 
 const QueueCommands: React.FC<QueueCommandsProps> = ({
   onTooltipVisibilityChange,
   screenshots,
   onChatToggle,
-  onSettingsToggle
+  onSettingsToggle,
+  onAudioResult
 }) => {
   const [isTooltipVisible, setIsTooltipVisible] = useState(false)
   const tooltipRef = useRef<HTMLDivElement>(null)
   const [isRecording, setIsRecording] = useState(false)
   const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null)
-  const [audioResult, setAudioResult] = useState<string | null>(null)
   const chunks = useRef<Blob[]>([])
   // Remove all chat-related state, handlers, and the Dialog overlay from this file.
 
@@ -54,9 +55,13 @@ const QueueCommands: React.FC<QueueCommandsProps> = ({
             const base64Data = (reader.result as string).split(',')[1]
             try {
               const result = await window.electronAPI.analyzeAudioFromBase64(base64Data, blob.type)
-              setAudioResult(result.text)
+              if (onAudioResult) {
+                onAudioResult(result.text)
+              }
             } catch (err) {
-              setAudioResult('Audio analysis failed.')
+              if (onAudioResult) {
+                onAudioResult('Audio analysis failed.')
+              }
             }
           }
           reader.readAsDataURL(blob)
@@ -65,7 +70,9 @@ const QueueCommands: React.FC<QueueCommandsProps> = ({
         recorder.start()
         setIsRecording(true)
       } catch (err) {
-        setAudioResult('Could not start recording.')
+        if (onAudioResult) {
+          onAudioResult('Could not start recording.')
+        }
       }
     } else {
       // Stop recording
@@ -78,11 +85,11 @@ const QueueCommands: React.FC<QueueCommandsProps> = ({
   // Remove handleChatSend function
 
   return (
-    <div className="w-fit">
-      <div className="text-xs text-white/90 liquid-glass-bar py-1 px-4 flex items-center justify-center gap-4 draggable-area">
+    <div className="w-full min-w-0">
+      <div className="text-xs text-white/90 liquid-glass-bar py-1 px-3 sm:px-4 flex flex-wrap items-center justify-start gap-2 sm:gap-4 draggable-area min-w-0">
         {/* Show/Hide */}
-        <div className="flex items-center gap-2">
-          <span className="text-[11px] leading-none">Show/Hide</span>
+        <div className="flex items-center gap-2 shrink-0">
+          <span className="text-[11px] leading-none whitespace-nowrap">Show/Hide</span>
           <div className="flex gap-1">
             <button className="bg-white/10 hover:bg-white/20 transition-colors rounded-md px-1.5 py-1 text-[11px] leading-none text-white/70">
               ⌘
@@ -98,8 +105,8 @@ const QueueCommands: React.FC<QueueCommandsProps> = ({
 
         {/* Solve Command */}
         {screenshots.length > 0 && (
-          <div className="flex items-center gap-2">
-            <span className="text-[11px] leading-none">Solve</span>
+          <div className="flex items-center gap-2 shrink-0">
+            <span className="text-[11px] leading-none whitespace-nowrap">Solve</span>
             <div className="flex gap-1">
               <button className="bg-white/10 hover:bg-white/20 transition-colors rounded-md px-1.5 py-1 text-[11px] leading-none text-white/70">
                 ⌘
@@ -112,9 +119,9 @@ const QueueCommands: React.FC<QueueCommandsProps> = ({
         )}
 
         {/* Voice Recording Button */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 shrink-0">
           <button
-            className={`bg-white/10 hover:bg-white/20 transition-colors rounded-md px-2 py-1 text-[11px] leading-none text-white/70 flex items-center gap-1 ${isRecording ? 'bg-red-500/70 hover:bg-red-500/90' : ''}`}
+            className={`bg-white/10 hover:bg-white/20 transition-colors rounded-md px-2 py-1 text-[11px] leading-none text-white/70 flex items-center gap-1 whitespace-nowrap ${isRecording ? 'bg-red-500/70 hover:bg-red-500/90' : ''}`}
             onClick={handleRecordClick}
             type="button"
           >
@@ -127,9 +134,9 @@ const QueueCommands: React.FC<QueueCommandsProps> = ({
         </div>
 
         {/* Chat Button */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 shrink-0">
           <button
-            className="bg-white/10 hover:bg-white/20 transition-colors rounded-md px-2 py-1 text-[11px] leading-none text-white/70 flex items-center gap-1"
+            className="bg-white/10 hover:bg-white/20 transition-colors rounded-md px-2 py-1 text-[11px] leading-none text-white/70 flex items-center gap-1 whitespace-nowrap"
             onClick={onChatToggle}
             type="button"
           >
@@ -138,9 +145,9 @@ const QueueCommands: React.FC<QueueCommandsProps> = ({
         </div>
 
         {/* Settings Button */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 shrink-0">
           <button
-            className="bg-white/10 hover:bg-white/20 transition-colors rounded-md px-2 py-1 text-[11px] leading-none text-white/70 flex items-center gap-1"
+            className="bg-white/10 hover:bg-white/20 transition-colors rounded-md px-2 py-1 text-[11px] leading-none text-white/70 flex items-center gap-1 whitespace-nowrap"
             onClick={onSettingsToggle}
             type="button"
           >
@@ -165,7 +172,7 @@ const QueueCommands: React.FC<QueueCommandsProps> = ({
           {isTooltipVisible && (
             <div
               ref={tooltipRef}
-              className="absolute top-full right-0 mt-2 w-80"
+              className="absolute top-full right-0 mt-2 w-[min(20rem,calc(100vw-1rem))] max-w-full"
             >
               <div className="p-3 text-xs bg-black/80 backdrop-blur-md rounded-lg border border-white/10 text-white/90 shadow-lg">
                 <div className="space-y-4">
@@ -244,14 +251,6 @@ const QueueCommands: React.FC<QueueCommandsProps> = ({
           <IoLogOutOutline className="w-4 h-4" />
         </button>
       </div>
-      {/* Audio Result Display */}
-      {audioResult && (
-        <div className="mt-2 p-2 bg-white/10 rounded text-white text-xs max-w-md">
-          <span className="font-semibold">Audio Result:</span> {audioResult}
-        </div>
-      )}
-      {/* Chat Dialog Overlay */}
-      {/* Remove the Dialog component */}
     </div>
   )
 }

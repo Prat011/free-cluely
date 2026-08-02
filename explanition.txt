@@ -1,0 +1,9 @@
+Phase 1 (Build Infrastructure): Created vite.config.ts, added dotenv dependency, fixed WindowHelper.ts import path, fixed ScreenshotHelper.ts TypeScript errors.
+
+Phase 2 (AI Backend): Increased timeout from 8s to 30s (root cause of Gemini 408 errors) in LLMHelper.ts, groq.ts, and gemini.ts. Fixed dotenv path for packaged apps. Added chatWithScreenshots() method to LLMHelper.ts. Added chat and chat-with-screenshots IPC handlers. Updated preload.ts and type definitions.
+
+Phase 3-4 (Chat & Screenshot): Updated Queue.tsx to use chat/chatWithScreenshots API instead of gemini-chat. Chat opens by default. Auto-scroll on new messages. Screenshot-aware chat (sends screenshot paths when available). Added Take Screenshot button in chat. Added whitespace-pre-wrap for proper line break rendering.
+
+Phase 5-6 (Audio & Event Cleanup): Removed auto-recording from Solutions.tsx. Integrated audio results into chat via onAudioResult callback instead of standalone display. Removed duplicate onResetView listener in App.tsx.
+
+Phase 7 (UI): Fixedlass-bar (removed
